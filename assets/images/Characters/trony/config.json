@@ -1,0 +1,23 @@
+{
+    "name": "Trony",
+    "display_name": "Trony",
+    "description": "Totally voluntary citizen of the Kingdom.",
+    "weapon_name": "Transistor",
+    "weapon_type": "Sniper",
+    "stats": {
+        "speed": 150,
+        "hp": 75,
+        "burst_multiplier": 5
+    },
+    "sprite_info": {
+        "filename": "trony-sprite.png",
+        "frame_width": null,
+        "frame_height": null,
+        "animation_speed": 0.14
+    },
+    "burst_ability": {
+        "name": "Mega T.Rony",
+        "description": "Turn invisible, allowing user to pass through enemies and terrain and avoid damage for a short duration.",
+        "damage_multiplier": 3.2
+    }
+}

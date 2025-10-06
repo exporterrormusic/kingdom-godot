@@ -1,0 +1,23 @@
+{
+    "name": "Scarlet",
+    "display_name": "Scarlet",
+    "description": "A fierce warrior with dual weapons and berserker rage.",
+    "weapon_name": "Fleetly Fading",
+    "weapon_type": "Sword",
+    "stats": {
+        "speed": 300,
+        "hp": 70,
+        "burst_multiplier": 5
+    },
+    "sprite_info": {
+        "filename": "scarlet-sprite.png",
+        "frame_width": null,
+        "frame_height": null,
+        "animation_speed": 0.08
+    },
+    "burst_ability": {
+        "name": "Scarlet Flash",
+        "description": "Destroy all enemies and screen, teleporting to a random enemy location after it's destroyed.  You are the storm that is approaching",
+        "damage_multiplier": 2.8
+    }
+}

@@ -1,0 +1,23 @@
+{
+    "name": "Crown",
+    "display_name": "Crown",
+    "description": "A royal mage with powerful magical attacks and moderate defense.",
+    "weapon_name": "Your Majesty",
+    "weapon_type": "Minigun",
+    "stats": {
+        "speed": 150,
+        "hp": 75,
+        "burst_multiplier": 5
+    },
+    "sprite_info": {
+        "filename": "crown-sprite.png",
+        "frame_width": null,
+        "frame_height": null,
+        "animation_speed": 0.18
+    },
+    "burst_ability": {
+        "name": "Last Kingdom",
+        "description": "Radiate AOE attacks from her Naked King outfit.",
+        "damage_multiplier": 3.0
+    }
+}

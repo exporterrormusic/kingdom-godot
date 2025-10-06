@@ -1,0 +1,432 @@
+[gd_scene load_steps=9 format=3 uid="uid://ua1a4ga2f5w6"]
+
+[ext_resource type="Script" uid="uid://8yrtinwhimoo" path="res://src/ui/main_menu.gd" id="1"]
+[ext_resource type="Script" uid="uid://diqkjdh831y5b" path="res://src/ui/components/venetian_blinds_background.gd" id="2"]
+[ext_resource type="Script" uid="uid://65c40nfh18uq" path="res://src/ui/components/main_menu_option_button.gd" id="3"]
+[ext_resource type="Script" uid="uid://bbg7udtn3ripg" path="res://src/ui/components/main_menu_icon.gd" id="4"]
+[ext_resource type="FontFile" uid="uid://i36j82vlrj2r" path="res://resources/fonts/futura_condensed_extra_bold.tres" id="5"]
+[ext_resource type="FontFile" uid="uid://dmat1onw0c65m" path="res://resources/fonts/pretendard_bold.tres" id="6"]
+
+[sub_resource type="StyleBoxFlat" id="1"]
+bg_color = Color(0.0862745, 0.0862745, 0.121569, 0.88)
+border_width_left = 2
+border_width_top = 3
+border_width_right = 2
+border_width_bottom = 3
+border_color = Color(0.611765, 0.611765, 0.713726, 0.8)
+
+[sub_resource type="StyleBoxFlat" id="2"]
+bg_color = Color(0.0705882, 0.0705882, 0.105882, 0.85)
+border_width_top = 2
+border_width_bottom = 2
+border_color = Color(0.454902, 0.454902, 0.545098, 0.9)
+
+[node name="MainMenu" type="Control"]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+metadata/_edit_horizontal_guides_ = [767.0, 983.0]
+
+[node name="Background" type="Control" parent="."]
+unique_name_in_owner = true
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("2")
+
+[node name="Overlay" type="ColorRect" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.18)
+
+[node name="UiRoot" type="Control" parent="."]
+unique_name_in_owner = true
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="TitlePanel" type="Panel" parent="UiRoot"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.14
+anchor_right = 0.5
+anchor_bottom = 0.14
+offset_left = -640.0
+offset_top = -120.0
+offset_right = 640.0
+offset_bottom = 120.0
+theme_override_styles/panel = SubResource("1")
+
+[node name="TitleLabel" type="Label" parent="UiRoot/TitlePanel"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -420.0
+offset_top = 24.0
+offset_right = 420.0
+offset_bottom = 108.0
+theme_override_fonts/font = ExtResource("5")
+theme_override_font_sizes/font_size = 110
+text = "KINGDOM CLEANUP"
+horizontal_alignment = 1
+
+[node name="Separator" type="ColorRect" parent="UiRoot/TitlePanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -280.0
+offset_top = 156.8
+offset_right = 280.0
+offset_bottom = 160.8
+grow_horizontal = 2
+color = Color(0.286275, 0.286275, 0.388235, 1)
+
+[node name="SubtitleLabel" type="Label" parent="UiRoot/TitlePanel"]
+unique_name_in_owner = true
+modulate = Color(0.784314, 0.784314, 0.862745, 1)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -280.0
+offset_top = 169.8
+offset_right = 280.0
+offset_bottom = 225.8
+grow_horizontal = 2
+theme_override_fonts/font = ExtResource("6")
+theme_override_font_sizes/font_size = 40
+text = "A NIKKE FAN GAME"
+horizontal_alignment = 1
+
+[node name="MenuBar" type="Panel" parent="UiRoot"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -294.0
+offset_bottom = -90.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("2")
+
+[node name="MenuMargin" type="Control" parent="UiRoot/MenuBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = 12.0
+offset_right = -32.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="UiRoot/MenuBar/MenuMargin"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="LEADERBOARDS" type="Button" parent="UiRoot/MenuBar/MenuMargin/ButtonRow"]
+custom_minimum_size = Vector2(220, 140)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_colors/icon_normal_color = Color(1, 1, 1, 1)
+script = ExtResource("3")
+option_id = "LEADERBOARDS"
+icon_type = "leaderboards"
+label_text = "LEADERBOARDS"
+accent_color = Color(0.862745, 0.862745, 0.905882, 1)
+
+[node name="Content" type="VBoxContainer" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/LEADERBOARDS"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Icon" type="Control" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/LEADERBOARDS/Content"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("4")
+
+[node name="Label" type="Label" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/LEADERBOARDS/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "LEADERBOARDS"
+horizontal_alignment = 1
+
+[node name="ACHIEVEMENTS" type="Button" parent="UiRoot/MenuBar/MenuMargin/ButtonRow"]
+custom_minimum_size = Vector2(220, 140)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("3")
+option_id = "ACHIEVEMENTS"
+icon_type = "achievements"
+label_text = "ACHIEVEMENTS"
+accent_color = Color(0.862745, 0.862745, 0.905882, 1)
+
+[node name="Content" type="VBoxContainer" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/ACHIEVEMENTS"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Icon" type="Control" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/ACHIEVEMENTS/Content"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("4")
+
+[node name="Label" type="Label" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/ACHIEVEMENTS/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "ACHIEVEMENTS"
+horizontal_alignment = 1
+
+[node name="SHOP" type="Button" parent="UiRoot/MenuBar/MenuMargin/ButtonRow"]
+custom_minimum_size = Vector2(220, 140)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("3")
+option_id = "SHOP"
+icon_type = "shop"
+label_text = "SHOP"
+accent_color = Color(0.862745, 0.862745, 0.905882, 1)
+
+[node name="Content" type="VBoxContainer" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/SHOP"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Icon" type="Control" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/SHOP/Content"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("4")
+
+[node name="Label" type="Label" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/SHOP/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "SHOP"
+horizontal_alignment = 1
+
+[node name="PLAY" type="Button" parent="UiRoot/MenuBar/MenuMargin/ButtonRow"]
+custom_minimum_size = Vector2(220, 140)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("3")
+accent_color = Color(0.376471, 0.376471, 0.376471, 1)
+play_option = true
+
+[node name="Content" type="VBoxContainer" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/PLAY"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Icon" type="Control" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/PLAY/Content"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("4")
+base_color = Color(0.4, 0.4, 0.4, 1)
+
+[node name="Label" type="Label" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/PLAY/Content"]
+modulate = Color(0.231373, 0.231373, 0.231373, 1)
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "PLAY"
+horizontal_alignment = 1
+
+[node name="THE OUTPOST" type="Button" parent="UiRoot/MenuBar/MenuMargin/ButtonRow"]
+custom_minimum_size = Vector2(220, 140)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("3")
+option_id = "THE OUTPOST"
+icon_type = "outpost"
+label_text = "THE OUTPOST"
+accent_color = Color(0.862745, 0.862745, 0.905882, 1)
+
+[node name="Content" type="VBoxContainer" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/THE OUTPOST"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Icon" type="Control" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/THE OUTPOST/Content"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("4")
+
+[node name="Label" type="Label" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/THE OUTPOST/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "THE OUTPOST"
+horizontal_alignment = 1
+
+[node name="SETTINGS" type="Button" parent="UiRoot/MenuBar/MenuMargin/ButtonRow"]
+custom_minimum_size = Vector2(220, 140)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("3")
+option_id = "SETTINGS"
+icon_type = "settings"
+label_text = "SETTINGS"
+accent_color = Color(0.862745, 0.862745, 0.905882, 1)
+
+[node name="Content" type="VBoxContainer" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/SETTINGS"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Icon" type="Control" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/SETTINGS/Content"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("4")
+
+[node name="Label" type="Label" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/SETTINGS/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "SETTINGS"
+horizontal_alignment = 1
+
+[node name="QUIT" type="Button" parent="UiRoot/MenuBar/MenuMargin/ButtonRow"]
+custom_minimum_size = Vector2(220, 140)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("3")
+option_id = "QUIT"
+icon_type = "quit"
+label_text = "QUIT"
+accent_color = Color(0.94902, 0.411765, 0.411765, 1)
+
+[node name="Content" type="VBoxContainer" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/QUIT"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Icon" type="Control" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/QUIT/Content"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("4")
+base_color = Color(0.94902, 0.411765, 0.411765, 1)
+selected_color = Color(0.996078, 0.470588, 0.470588, 1)
+
+[node name="Label" type="Label" parent="UiRoot/MenuBar/MenuMargin/ButtonRow/QUIT/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "QUIT"
+horizontal_alignment = 1
+
+[node name="VersionLabel" type="Label" parent="UiRoot"]
+unique_name_in_owner = true
+modulate = Color(0.627451, 0.627451, 0.709804, 1)
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -65.0
+offset_top = -31.0
+offset_right = -1.0
+offset_bottom = -2.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 20
+text = "v0.2"
+horizontal_alignment = 1
+
+[node name="ComingSoonDialog" type="AcceptDialog" parent="."]
+unique_name_in_owner = true
+title = "Coming Soon"
+initial_position = 1
+size = Vector2i(520, 220)
+dialog_text = "This feature isn't available yet."

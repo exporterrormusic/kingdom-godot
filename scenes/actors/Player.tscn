@@ -1,0 +1,14 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource path="res://src/actors/player_controller.gd" type="Script" id=1]
+[ext_resource path="res://src/actors/character_sprite_animator.gd" type="Script" id=2]
+[ext_resource path="res://src/ui/overlays/player_overhead_hud.gd" type="Script" id=3]
+
+[node name="Player" type="CharacterBody2D"]
+script = ExtResource(1)
+
+[node name="CharacterSpriteAnimator" type="AnimatedSprite2D" parent="."]
+script = ExtResource(2)
+
+[node name="OverheadHud" type="Node2D" parent="."]
+script = ExtResource(3)

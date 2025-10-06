@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bswl0r8gsayxe"
+path="res://.godot/imported/MARIAN TIME TRAVEL (Remix) - stereo racer.mp3-b8e5575b9dace3d2518bcedcae09b1b4.mp3str"
+
+[deps]
+
+source_file="res://assets/sounds/music/battle/MARIAN TIME TRAVEL (Remix) - stereo racer.mp3"
+dest_files=["res://.godot/imported/MARIAN TIME TRAVEL (Remix) - stereo racer.mp3-b8e5575b9dace3d2518bcedcae09b1b4.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

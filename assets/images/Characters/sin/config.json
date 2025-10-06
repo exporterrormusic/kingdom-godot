@@ -1,0 +1,23 @@
+{
+    "name": "Sin",
+    "display_name": "Sin",
+    "description": "Cecil's girlfriend.",
+    "weapon_name": "Heavy Talker",
+    "weapon_type": "Assault Rifle",
+    "stats": {
+        "speed": 150,
+        "hp": 100,
+        "burst_multiplier": 5
+    },
+    "sprite_info": {
+        "filename": "sin-sprite.png",
+        "frame_width": null,
+        "frame_height": null,
+        "animation_speed": 0.25
+    },
+    "burst_ability": {
+        "name": "Words Can Kill",
+        "description": "Drains life from all enemies while healing herself.",
+        "damage_multiplier": 3.5
+    }
+}

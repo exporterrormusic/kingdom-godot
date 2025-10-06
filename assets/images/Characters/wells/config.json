@@ -1,0 +1,23 @@
+{
+    "name": "Wells",
+    "display_name": "Wells",
+    "description": "A gunslinger with rapid-fire revolvers and superior reflexes.",
+    "weapon_name": "Mnemosyne",
+    "weapon_type": "SMG",
+    "stats": {
+        "speed": 150,
+        "hp": 55,
+        "burst_multiplier": 5
+    },
+    "sprite_info": {
+        "filename": "wells-sprite.png",
+        "frame_width": null,
+        "frame_height": null,
+        "animation_speed": 0.09
+    },
+    "burst_ability": {
+        "name": "Mnemosyne",
+        "description": "Rewind time, reverting all damage all players have taken in the last 10 seconds, restoring all ammo to full.  Transports Wells back to her previous location",
+        "damage_multiplier": 2.6
+    }
+}

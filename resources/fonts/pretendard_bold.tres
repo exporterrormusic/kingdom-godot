@@ -1,0 +1,36 @@
+[gd_resource type="FontFile" load_steps=2 format=3 uid="uid://dmat1onw0c65m"]
+
+[ext_resource type="FontFile" uid="uid://bbmw4302pp8dy" path="res://assets/fonts/pretendard/Pretendard-Bold.otf" id="1"]
+
+[resource]
+fallbacks = Array[Font]([ExtResource("1")])
+cache/0/16/0/ascent = 0.0
+cache/0/16/0/descent = 0.0
+cache/0/16/0/underline_position = 0.0
+cache/0/16/0/underline_thickness = 0.0
+cache/0/16/0/scale = 1.0
+cache/0/50/0/ascent = 0.0
+cache/0/50/0/descent = 0.0
+cache/0/50/0/underline_position = 0.0
+cache/0/50/0/underline_thickness = 0.0
+cache/0/50/0/scale = 1.0
+cache/0/56/0/ascent = 0.0
+cache/0/56/0/descent = 0.0
+cache/0/56/0/underline_position = 0.0
+cache/0/56/0/underline_thickness = 0.0
+cache/0/56/0/scale = 1.0
+cache/0/38/0/ascent = 0.0
+cache/0/38/0/descent = 0.0
+cache/0/38/0/underline_position = 0.0
+cache/0/38/0/underline_thickness = 0.0
+cache/0/38/0/scale = 1.0
+cache/0/34/0/ascent = 0.0
+cache/0/34/0/descent = 0.0
+cache/0/34/0/underline_position = 0.0
+cache/0/34/0/underline_thickness = 0.0
+cache/0/34/0/scale = 1.0
+cache/0/40/0/ascent = 0.0
+cache/0/40/0/descent = 0.0
+cache/0/40/0/underline_position = 0.0
+cache/0/40/0/underline_thickness = 0.0
+cache/0/40/0/scale = 1.0

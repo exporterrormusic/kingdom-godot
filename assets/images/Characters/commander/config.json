@@ -1,0 +1,23 @@
+{
+    "name": "Legendary Commander",
+    "display_name": "Legendary Commander",
+    "description": "Leader of Goddess Squad.  Definetly not Andersen.",
+    "weapon_name": "Plot Armor",
+    "weapon_type": "Assault Rifle",
+    "stats": {
+        "speed": 150,
+        "hp": 70,
+        "burst_multiplier": 5
+    },
+    "sprite_info": {
+        "filename": "commander-sprite.png",
+        "frame_width": null,
+        "frame_height": null,
+        "animation_speed": 0.12
+    },
+    "burst_ability": {
+        "name": "I've Got a Meeting",
+        "description": "You need to get to an important meeting.  Raptures can wait.  Stuns all enemies.",
+        "damage_multiplier": 1.8
+    }
+}

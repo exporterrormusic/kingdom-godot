@@ -1,0 +1,496 @@
+[gd_scene load_steps=4 format=3 uid="uid://cppngj0h2l4or"]
+
+[ext_resource type="Script" uid="uid://df54xmyyhgq50" path="res://src/ui/character_select_menu.gd" id="1"]
+[ext_resource type="Script" uid="uid://diqkjdh831y5b" path="res://src/ui/components/venetian_blinds_background.gd" id="2"]
+
+[sub_resource type="StyleBoxFlat" id="1"]
+bg_color = Color(0.0705882, 0.0705882, 0.109804, 0.94)
+border_width_left = 2
+border_width_top = 3
+border_width_right = 2
+border_width_bottom = 3
+border_color = Color(0.556863, 0.631373, 0.921569, 0.75)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[node name="CharacterSelectMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+
+[node name="Background" type="Control" parent="."]
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("2")
+
+[node name="Overlay" type="ColorRect" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.58)
+
+[node name="TitleBar" type="Control" parent="."]
+unique_name_in_owner = true
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 0.095
+
+[node name="TitleBackground" type="ColorRect" parent="TitleBar"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.08, 0.08, 0.11, 0.92)
+
+[node name="TitleLabel" type="Label" parent="TitleBar"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_left = 0.1
+anchor_top = 0.02
+anchor_right = 0.9
+anchor_bottom = 1.0
+offset_top = -6.0
+offset_bottom = 6.0
+theme_override_font_sizes/font_size = 72
+text = "CHOOSE YOUR NIKKE"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ContentRoot" type="Control" parent="."]
+anchors_preset = 0
+anchor_left = 0.05
+anchor_top = 0.105
+anchor_right = 0.95
+anchor_bottom = 0.88
+
+[node name="GridRoot" type="Control" parent="ContentRoot"]
+unique_name_in_owner = true
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 0.5
+
+[node name="DetailsPanel" type="Panel" parent="ContentRoot"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.62
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 8.0
+
+[node name="DetailsBackground" type="ColorRect" parent="ContentRoot/DetailsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.08, 0.08, 0.11, 0.92)
+
+[node name="DetailsBorder" type="ColorRect" parent="ContentRoot/DetailsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -3.0
+offset_top = -3.0
+offset_right = 3.0
+offset_bottom = 52.600037
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.39, 0.39, 0.47, 0.9)
+
+[node name="DetailsContent" type="HBoxContainer" parent="ContentRoot/DetailsPanel"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.03
+anchor_top = 0.08
+anchor_right = 0.97
+anchor_bottom = 0.92
+theme_override_constants/separation = 40
+
+[node name="CharacterColumn" type="VBoxContainer" parent="ContentRoot/DetailsPanel/DetailsContent"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
+
+[node name="CharacterName" type="Label" parent="ContentRoot/DetailsPanel/DetailsContent/CharacterColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 48
+text = "Select a Character"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="RoleDifficulty" type="Label" parent="ContentRoot/DetailsPanel/DetailsContent/CharacterColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Role — Difficulty"
+horizontal_alignment = 1
+
+[node name="CharacterDivider" type="HSeparator" parent="ContentRoot/DetailsPanel/DetailsContent/CharacterColumn"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SpriteContainer" type="CenterContainer" parent="ContentRoot/DetailsPanel/DetailsContent/CharacterColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CharacterSprite" type="TextureRect" parent="ContentRoot/DetailsPanel/DetailsContent/CharacterColumn/SpriteContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+expand_mode = 2
+stretch_mode = 4
+
+[node name="StatsContainer" type="VBoxContainer" parent="ContentRoot/DetailsPanel/DetailsContent/CharacterColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ColumnDividerA" type="VSeparator" parent="ContentRoot/DetailsPanel/DetailsContent"]
+custom_minimum_size = Vector2(4, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="WeaponColumn" type="VBoxContainer" parent="ContentRoot/DetailsPanel/DetailsContent"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="WeaponTitle" type="Label" parent="ContentRoot/DetailsPanel/DetailsContent/WeaponColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 42
+text = "Weapon"
+horizontal_alignment = 1
+
+[node name="WeaponType" type="Label" parent="ContentRoot/DetailsPanel/DetailsContent/WeaponColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Type: --"
+horizontal_alignment = 1
+
+[node name="WeaponDividerPrimary" type="HSeparator" parent="ContentRoot/DetailsPanel/DetailsContent/WeaponColumn"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="WeaponDescription" type="RichTextLabel" parent="ContentRoot/DetailsPanel/DetailsContent/WeaponColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "Normal fire description."
+fit_content = true
+scroll_active = false
+
+[node name="WeaponSpecialTitle" type="Label" parent="ContentRoot/DetailsPanel/DetailsContent/WeaponColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Special"
+
+[node name="WeaponSpecialDescription" type="RichTextLabel" parent="ContentRoot/DetailsPanel/DetailsContent/WeaponColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "Special fire description."
+fit_content = true
+scroll_active = false
+
+[node name="WeaponDividerSecondary" type="HSeparator" parent="ContentRoot/DetailsPanel/DetailsContent/WeaponColumn"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ColumnDividerB" type="VSeparator" parent="ContentRoot/DetailsPanel/DetailsContent"]
+custom_minimum_size = Vector2(4, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BurstColumn" type="VBoxContainer" parent="ContentRoot/DetailsPanel/DetailsContent"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="BurstTitle" type="Label" parent="ContentRoot/DetailsPanel/DetailsContent/BurstColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 42
+text = "Burst Ability"
+horizontal_alignment = 1
+
+[node name="BurstDamage" type="Label" parent="ContentRoot/DetailsPanel/DetailsContent/BurstColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Damage Multiplier: x1.0"
+horizontal_alignment = 1
+
+[node name="BurstDivider" type="HSeparator" parent="ContentRoot/DetailsPanel/DetailsContent/BurstColumn"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BurstDescription" type="RichTextLabel" parent="ContentRoot/DetailsPanel/DetailsContent/BurstColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "Burst ability description."
+fit_content = true
+scroll_active = false
+
+[node name="RandomDetails" type="CenterContainer" parent="ContentRoot/DetailsPanel"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="RandomLabel" type="Label" parent="ContentRoot/DetailsPanel/RandomDetails"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 52
+text = "A random Nikke will be deployed!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ConfigurationPanel" type="Panel" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.05
+anchor_top = 0.58
+anchor_right = 0.95
+anchor_bottom = 0.955
+offset_top = -60.399963
+
+[node name="ConfigurationBackground" type="ColorRect" parent="ConfigurationPanel"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.1, 0.1, 0.16, 0.92)
+
+[node name="ConfigurationBorder" type="ColorRect" parent="ConfigurationPanel"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -3.0
+offset_top = -3.0
+offset_right = 3.0
+offset_bottom = 3.0
+color = Color(0.39, 0.39, 0.47, 0.9)
+
+[node name="ConfigurationContent" type="HBoxContainer" parent="ConfigurationPanel"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_left = 0.03
+anchor_top = 0.1
+anchor_right = 0.97
+anchor_bottom = 0.92
+theme_override_constants/separation = 32
+
+[node name="MapPreviewColumn" type="VBoxContainer" parent="ConfigurationPanel/ConfigurationContent"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="MapPreviewLabel" type="Label" parent="ConfigurationPanel/ConfigurationContent/MapPreviewColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 42
+text = "Map Preview"
+horizontal_alignment = 1
+
+[node name="MapPreviewFrame" type="Panel" parent="ConfigurationPanel/ConfigurationContent/MapPreviewColumn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 260)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("1")
+
+[node name="MapPreviewTexture" type="TextureRect" parent="ConfigurationPanel/ConfigurationContent/MapPreviewColumn/MapPreviewFrame"]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.95)
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 3
+stretch_mode = 6
+
+[node name="MapPreviewHint" type="RichTextLabel" parent="ConfigurationPanel/ConfigurationContent/MapPreviewColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "[center][color=#8FA3FF]Choose a map to update the preview.[/color][/center]"
+fit_content = true
+scroll_active = false
+
+[node name="ColumnDividerConfig" type="VSeparator" parent="ConfigurationPanel/ConfigurationContent"]
+custom_minimum_size = Vector2(6, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SetupColumn" type="VBoxContainer" parent="ConfigurationPanel/ConfigurationContent"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="ConfigurationTitle" type="Label" parent="ConfigurationPanel/ConfigurationContent/SetupColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 44
+text = "Mission Setup"
+
+[node name="ConfigurationDivider" type="HSeparator" parent="ConfigurationPanel/ConfigurationContent/SetupColumn"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MapSection" type="VBoxContainer" parent="ConfigurationPanel/ConfigurationContent/SetupColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="MapSectionLabel" type="Label" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MapSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Map"
+
+[node name="MapSectionDivider" type="HSeparator" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MapSection"]
+custom_minimum_size = Vector2(0, 4)
+layout_mode = 2
+
+[node name="MapRow" type="HBoxContainer" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MapSection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="MapLabel" type="Label" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MapSection/MapRow"]
+layout_mode = 2
+text = "Selection"
+horizontal_alignment = 2
+
+[node name="MapOptions" type="OptionButton" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MapSection/MapRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 2
+selected = 0
+item_count = 3
+popup/item_0/id = 0
+popup/item_1/id = 1
+popup/item_2/id = 2
+
+[node name="EnvironmentSection" type="VBoxContainer" parent="ConfigurationPanel/ConfigurationContent/SetupColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="EnvironmentLabel" type="Label" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/EnvironmentSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Environment"
+
+[node name="EnvironmentDivider" type="HSeparator" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/EnvironmentSection"]
+custom_minimum_size = Vector2(0, 4)
+layout_mode = 2
+
+[node name="EffectsRow" type="HBoxContainer" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/EnvironmentSection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="EffectsLabel" type="Label" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/EnvironmentSection/EffectsRow"]
+layout_mode = 2
+text = "Conditions"
+horizontal_alignment = 2
+
+[node name="EffectsOptions" type="OptionButton" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/EnvironmentSection/EffectsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 2
+selected = 0
+item_count = 3
+popup/item_0/id = 0
+popup/item_1/id = 1
+popup/item_2/id = 2
+
+[node name="ModifiersSection" type="VBoxContainer" parent="ConfigurationPanel/ConfigurationContent/SetupColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="ModifiersLabel" type="Label" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/ModifiersSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Modifiers"
+
+[node name="ModifiersDivider" type="HSeparator" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/ModifiersSection"]
+custom_minimum_size = Vector2(0, 4)
+layout_mode = 2
+
+[node name="ModifiersRow" type="HBoxContainer" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/ModifiersSection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="ModifierLabel" type="Label" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/ModifiersSection/ModifiersRow"]
+layout_mode = 2
+text = "Rules"
+horizontal_alignment = 2
+
+[node name="ModifiersOptions" type="CheckBox" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/ModifiersSection/ModifiersRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 2
+text = "Enable Random Events"
+
+[node name="ConfigurationHint" type="RichTextLabel" parent="ConfigurationPanel/ConfigurationContent/SetupColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "[color=#C8D4FF]Pick a map and modifiers before deploying.[/color]"
+fit_content = true
+scroll_active = false
+
+[node name="ButtonsBar" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+anchor_left = 0.25
+anchor_top = 0.9
+anchor_right = 0.75
+anchor_bottom = 0.97
+theme_override_constants/separation = 40
+alignment = 1
+
+[node name="BackButton" type="Button" parent="ButtonsBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Back"
+
+[node name="ConfirmButton" type="Button" parent="ButtonsBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Deploy"

@@ -1,0 +1,306 @@
+{
+    "weapon_categories": {
+        "Assault Rifle": {
+            "description": "Balanced automatic rifle with moderate damage and good versatility",
+            "fire_mode": "automatic",
+            "ammo": {
+                "magazine_size": 30,
+                "reload_time": 2.0,
+                "grenade_rounds": 8,
+                "grenade_reload_time": 2.0
+            },
+            "firing": {
+                "fire_rate": 0.2,
+                "damage": 25,
+                "range": 800,
+                "accuracy": 0.95,
+                "recoil": 0.03
+            },
+            "bullet_properties": {
+                "speed": 1275,
+                "size_multiplier": 1.4,
+                "color": [255, 200, 100],
+                "shape": "tracer",
+                "penetration": 1
+            },
+            "effects": {
+                "muzzle_flash": true,
+                "shell_ejection": true,
+                "screen_shake": 0.5,
+                "sound": "rifle_shot"
+            },
+            "special_mechanics": {
+                "burst_fire_option": false,
+                "bipod_deploy": false,
+                "grenade_launcher": {
+                    "enabled": true,
+                    "damage": 50,
+                    "explosion_radius": 120,
+                    "projectile_speed": 600,
+                    "projectile_size": 6.0,
+                    "projectile_color": [255, 100, 50]
+                }
+            },
+            "special_attack": {
+                "name": "Grenade Launcher",
+                "description": "Fires explosive grenades that deal area-of-effect damage in a 120-pixel radius"
+            }
+        },
+        "SMG": {
+            "description": "High rate of fire automatic weapon with lower damage per shot",
+            "fire_mode": "automatic",
+            "ammo": {
+                "magazine_size": 60,
+                "reload_time": 1.0
+            },
+            "firing": {
+                "fire_rate": 0.05,
+                "damage": 18,
+                "range": 675,
+                "accuracy": 0.88,
+                "recoil": 0.05
+            },
+            "bullet_properties": {
+                "speed": 900,
+                "size_multiplier": 0.8,
+                "color": [0, 255, 255],
+                "shape": "neon",
+                "penetration": 1
+            },
+            "effects": {
+                "muzzle_flash": true,
+                "shell_ejection": true,
+                "screen_shake": 0.3,
+                "sound": "smg_shot"
+            },
+            "special_mechanics": {
+                "burst_fire_option": false,
+                "bipod_deploy": false
+            },
+            "special_attack": {
+                "name": "Ricochet Mode",
+                "description": "Alternate firing mode with reduced range but bullets bounce off surfaces and enemies towards nearest targets",
+                "cooldown": 0.0,
+                "damage_multiplier": 1.0,
+                "range_multiplier": 0.5,
+                "bounce_enabled": true,
+                "max_bounces": 1,
+                "bounce_range_multiplier": 0.5,
+                "enemy_targeting": true,
+                "effects": ["cyan_tracers", "bounce_sparks"]
+            }
+        },
+        "Sniper": {
+            "description": "High-damage precision weapon with penetrating laser-like shots",
+            "fire_mode": "semi-automatic",
+            "ammo": {
+                "magazine_size": 6,
+                "reload_time": 3.0
+            },
+            "firing": {
+                "fire_rate": 1.0,
+                "damage": 80,
+                "range": 1200,
+                "accuracy": 0.99,
+                "recoil": 0.01
+            },
+            "bullet_properties": {
+                "speed": 2500,
+                "size_multiplier": 2.5,
+                "color": [150, 200, 255],
+                "shape": "laser",
+                "penetration": 999
+            },
+            "effects": {
+                "muzzle_flash": true,
+                "shell_ejection": false,
+                "screen_shake": 0.8,
+                "sound": "sniper_shot"
+            },
+            "special_mechanics": {
+                "burst_fire_option": false,
+                "bipod_deploy": false
+            },
+            "special_attack": {
+                "name": "Burning Trace",
+                "description": "Fires an enlarged bullet that leaves a burning trail lasting 2.5 seconds",
+                "cooldown": 0.0,
+                "size_multiplier": 1.5,
+                "trail_duration": 2.5,
+                "trail_damage": 12,
+                "effects": ["burning_trail", "enhanced_bullet"]
+            }
+        },
+        "Shotgun": {
+            "description": "Close-range powerhouse that fires multiple pellets in a spread pattern",
+            "fire_mode": "semi-automatic",
+            "ammo": {
+                "magazine_size": 8,
+                "reload_time": 2.5
+            },
+            "firing": {
+                "fire_rate": 0.8,
+                "damage": 35,
+                "range": 550,
+                "accuracy": 0.75,
+                "recoil": 0.08
+            },
+            "bullet_properties": {
+                "speed": 850,
+                "size_multiplier": 1.8,
+                "color": [255, 150, 50],
+                "shape": "pellet",
+                "penetration": 1
+            },
+            "effects": {
+                "muzzle_flash": true,
+                "shell_ejection": true,
+                "screen_shake": 0.7,
+                "sound": "shotgun_blast"
+            },
+            "special_mechanics": {
+                "pellet_count": 5,
+                "spread_angle": 15,
+                "burst_fire_option": false,
+                "bipod_deploy": false
+            },
+            "special_attack": {
+                "name": "Penetrating Blast",
+                "description": "Every bullet hit triggers a V-shaped explosive blast behind the enemy",
+                "cooldown": 3.0,
+                "damage_multiplier": 0.67,
+                "blast_angle": 45,
+                "blast_range": 150,
+                "blast_duration": 0.25,
+                "effects": ["v_shaped_explosion", "red_blast_particles"]
+            }
+        },
+        "Rocket Launcher": {
+            "description": "Heavy explosive weapon with area damage and target-seeking detonation",
+            "fire_mode": "semi-automatic",
+            "ammo": {
+                "magazine_size": 4,
+                "reload_time": 2.5
+            },
+            "firing": {
+                "fire_rate": 2.0,
+                "damage": 120,
+                "range": 1000,
+                "accuracy": 0.90,
+                "recoil": 0.15
+            },
+            "bullet_properties": {
+                "speed": 400,
+                "size_multiplier": 1.8,
+                "color": [255, 100, 0],
+                "shape": "rocket",
+                "penetration": 1
+            },
+            "effects": {
+                "muzzle_flash": true,
+                "shell_ejection": false,
+                "screen_shake": 0.36,
+                "sound": "rocket_fire"
+            },
+            "special_mechanics": {
+                "explosion_radius": 150,
+                "target_detonation": true,
+                "burst_fire_option": false,
+                "bipod_deploy": false
+            },
+            "special_attack": {
+                "name": "Inferno Rocket",
+                "description": "Fires a massive rocket with double explosion radius and leaves burning ground for 5 seconds",
+                "cooldown": 3.0,
+                "damage_multiplier": 1.5,
+                "explosion_radius_multiplier": 2.0,
+                "ground_fire_duration": 5.0,
+                "ground_fire_damage": 15,
+                "effects": ["enhanced_explosion", "ground_fire", "red_rocket_trail"]
+            }
+        },
+        "Minigun": {
+            "description": "Ultra-high rate of fire heavy weapon with spin-up mechanics and ramping damage",
+            "fire_mode": "automatic",
+            "ammo": {
+                "magazine_size": 200,
+                "reload_time": 4.0
+            },
+            "firing": {
+                "fire_rate": 0.03,
+                "damage": 12,
+                "range": 700,
+                "accuracy": 0.80,
+                "recoil": 0.10
+            },
+            "bullet_properties": {
+                "speed": 950,
+                "size_multiplier": 1.0,
+                "color": [255, 255, 100],
+                "shape": "tracer",
+                "penetration": 1
+            },
+            "effects": {
+                "muzzle_flash": true,
+                "shell_ejection": true,
+                "screen_shake": 0.4,
+                "sound": "minigun_fire"
+            },
+            "special_mechanics": {
+                "spin_up_time": 5.0,
+                "initial_fire_rate": 0.5,
+                "spun_up_damage_multiplier": 1.8,
+                "burst_fire_option": false,
+                "bipod_deploy": false
+            }
+        },
+        "Sword": {
+            "description": "Melee weapon with large area-of-effect slashes and infinite attacks",
+            "fire_mode": "melee",
+            "ammo": {
+                "magazine_size": 999,
+                "reload_time": 0.0
+            },
+            "firing": {
+                "fire_rate": 0.4,
+                "damage": 60,
+                "range": 300,
+                "accuracy": 1.0,
+                "recoil": 0.0
+            },
+            "bullet_properties": {
+                "speed": 1200,
+                "size_multiplier": 4.0,
+                "color": [200, 200, 255],
+                "shape": "slash",
+                "penetration": 5
+            },
+            "effects": {
+                "muzzle_flash": false,
+                "shell_ejection": false,
+                "screen_shake": 0.6,
+                "sound": "sword_slash"
+            },
+            "special_mechanics": {
+                "area_of_effect": true,
+                "slash_width": 200,
+                "slash_arc": 90,
+                "infinite_ammo": true,
+                "burst_fire_option": false,
+                "bipod_deploy": false
+            },
+            "special_attack": {
+                "name": "Mystical Thrust",
+                "description": "A focused thrust attack with extended reach and mystical beam effect",
+                "cooldown": 0.0,
+                "special_ammo_cost": 0,
+                "range": 500,
+                "damage_multiplier": 1.3,
+                "beam_width": 18,
+                "beam_effect": "mystical_beam",
+                "beam_color": [100, 255, 200],
+                "beam_duration": 0.4
+            }
+        }
+    }
+}

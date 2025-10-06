@@ -1,0 +1,23 @@
+{
+    "name": "Kilo",
+    "display_name": "Kilo",
+    "description": "Pilot of T.A.L.O.S.  Gundam 'enthusiast'.",
+    "weapon_name": "Anchoret",
+    "weapon_type": "Shotgun",
+    "stats": {
+        "speed": 150,
+        "hp": 60,
+        "burst_multiplier": 5
+    },
+    "sprite_info": {
+        "filename": "kilo-sprite.png",
+        "frame_width": null,
+        "frame_height": null,
+        "animation_speed": 0.1
+    },
+    "burst_ability": {
+        "name": "Assign Priority",
+        "description": "Becomes invincible, gain infitie ammo, and rapid fire.",
+        "damage_multiplier": 2.2
+    }
+}

@@ -1,0 +1,34 @@
+{
+    "name": "Default",
+    "display_name": "Rapture Overlord",
+    "description": "A massive corrupted Rapture unit that serves as the first boss encounter. This towering mechanical monstrosity combines overwhelming firepower with devastating area attacks.",
+    "weapon_name": "Overlord Cannon",
+    "weapon_type": "Rocket Launcher",
+    "stats": {
+        "speed": 60,
+        "hp": 1500,
+        "burst_multiplier": 1
+    },
+    "sprite_info": {
+        "filename": "rapture1-sprite.png",
+        "frame_width": null,
+        "frame_height": null,
+        "animation_speed": 0.12,
+        "scale_multiplier": 1.575
+    },
+    "boss_traits": {
+        "collision_size_multiplier": 1.575,
+        "glow_color": [255, 0, 0],
+        "glow_intensity": 0.0,
+        "base_damage": 45,
+        "special_attack_damage": 80,
+        "armor_rating": 0.3,
+        "phase_count": 2,
+        "phase_health_thresholds": [0.6, 0.3]
+    },
+    "burst_ability": {
+        "name": "Overload Surge",
+        "description": "Releases a massive energy surge that fires a massive beam attack",
+        "damage_multiplier": 3.0
+    }
+}

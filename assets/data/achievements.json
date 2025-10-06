@@ -1,0 +1,1610 @@
+[
+  {
+    "id": "first_win",
+    "name": "First Win!",
+    "description": "Complete your first game.",
+    "category": "general",
+    "character_id": null,
+    "requirement": {
+      "type": "complete_stage",
+      "stage": 1
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 500
+    },
+    "hidden": false
+  },
+  {
+    "id": "boss_killer",
+    "name": "Boss Killer",
+    "description": "Defeat 100 bosses.",
+    "category": "general",
+    "character_id": null,
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 100
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 1000
+    },
+    "hidden": false
+  },
+  {
+    "id": "cecil_mastery",
+    "name": "Master of Cecil",
+    "description": "Reach level 50 with Cecil.",
+    "category": "character_specific",
+    "character_id": "cecil",
+    "requirement": {
+      "type": "reach_level",
+      "level": 50,
+      "character": "cecil"
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 2000,
+      "stat_bonus": {
+        "attack": 5
+      }
+    },
+    "hidden": false
+  },
+  {
+    "id": "secret_achievement",
+    "name": "Hidden Gem",
+    "description": "Discover this secret achievement.",
+    "category": "secret",
+    "character_id": null,
+    "requirement": {
+      "type": "secret_condition"
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 5000
+    },
+    "hidden": true
+  },
+  {
+    "id": "first_boss",
+    "name": "First Boss",
+    "description": "Defeat your first boss",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 1
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 100
+    },
+    "hidden": false
+  },
+  {
+    "id": "boss_5",
+    "name": "Boss Hunter",
+    "description": "Defeat 5 bosses",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 5
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 250
+    },
+    "hidden": false
+  },
+  {
+    "id": "boss_25",
+    "name": "Boss Slayer",
+    "description": "Defeat 25 bosses",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 25
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 500
+    },
+    "hidden": false
+  },
+  {
+    "id": "boss_100",
+    "name": "Boss Master",
+    "description": "Defeat 100 bosses",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 100
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 1000
+    },
+    "hidden": true
+  },
+  {
+    "id": "wave_5",
+    "name": "Rookie Survivor",
+    "description": "Survive to Wave 5",
+    "category": "survival",
+    "character_id": null,
+    "requirement": {
+      "type": "complete_stage",
+      "stage": 5
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 200
+    },
+    "hidden": false
+  },
+  {
+    "id": "wave_10",
+    "name": "Veteran Survivor",
+    "description": "Survive to Wave 10",
+    "category": "survival",
+    "character_id": null,
+    "requirement": {
+      "type": "complete_stage",
+      "stage": 10
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 500
+    },
+    "hidden": false
+  },
+  {
+    "id": "wave_20",
+    "name": "Elite Survivor",
+    "description": "Survive to Wave 20",
+    "category": "survival",
+    "character_id": null,
+    "requirement": {
+      "type": "complete_stage",
+      "stage": 20
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 1000
+    },
+    "hidden": false
+  },
+  {
+    "id": "wave_50",
+    "name": "Legendary Survivor",
+    "description": "Survive to Wave 50",
+    "category": "survival",
+    "character_id": null,
+    "requirement": {
+      "type": "complete_stage",
+      "stage": 50
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 2500
+    },
+    "hidden": true
+  },
+  {
+    "id": "character_5",
+    "name": "Squad Leader",
+    "description": "Unlock 5 different characters",
+    "category": "character",
+    "character_id": null,
+    "requirement": {
+      "type": "unlock_characters",
+      "count": 5
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 300
+    },
+    "hidden": false
+  },
+  {
+    "id": "character_all",
+    "name": "Commander",
+    "description": "Unlock all characters",
+    "category": "character",
+    "character_id": null,
+    "requirement": {
+      "type": "unlock_characters",
+      "count": 11
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 1000
+    },
+    "hidden": false
+  },
+  {
+    "id": "cores_100",
+    "name": "Core Collector",
+    "description": "Collect 100 Rapture Cores",
+    "category": "collection",
+    "character_id": null,
+    "requirement": {
+      "type": "collect_cores",
+      "count": 100
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 200
+    },
+    "hidden": false
+  },
+  {
+    "id": "cores_1000",
+    "name": "Core Magnate",
+    "description": "Collect 1000 Rapture Cores",
+    "category": "collection",
+    "character_id": null,
+    "requirement": {
+      "type": "collect_cores",
+      "count": 1000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 500
+    },
+    "hidden": false
+  },
+  {
+    "id": "rifle_kills_50",
+    "name": "Rifleman",
+    "description": "Kill 50 enemies with Assault Rifle",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Assault Rifle",
+      "count": 50
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 150
+    },
+    "hidden": false
+  },
+  {
+    "id": "rifle_kills_500",
+    "name": "Rifle Master",
+    "description": "Kill 500 enemies with Assault Rifle",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Assault Rifle",
+      "count": 500
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 750
+    },
+    "hidden": true
+  },
+  {
+    "id": "smg_kills_50",
+    "name": "SMG Specialist",
+    "description": "Kill 50 enemies with SMG",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "SMG",
+      "count": 50
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 150
+    },
+    "hidden": false
+  },
+  {
+    "id": "smg_kills_500",
+    "name": "SMG Expert",
+    "description": "Kill 500 enemies with SMG",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "SMG",
+      "count": 500
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 750
+    },
+    "hidden": true
+  },
+  {
+    "id": "sniper_kills_25",
+    "name": "Marksman",
+    "description": "Kill 25 enemies with Sniper Rifle",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Sniper",
+      "count": 25
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 200
+    },
+    "hidden": false
+  },
+  {
+    "id": "sniper_kills_250",
+    "name": "Sniper Elite",
+    "description": "Kill 250 enemies with Sniper Rifle",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Sniper",
+      "count": 250
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 1000
+    },
+    "hidden": true
+  },
+  {
+    "id": "shotgun_kills_30",
+    "name": "Shotgunner",
+    "description": "Kill 30 enemies with Shotgun",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Shotgun",
+      "count": 30
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 180
+    },
+    "hidden": false
+  },
+  {
+    "id": "shotgun_kills_300",
+    "name": "Shotgun Master",
+    "description": "Kill 300 enemies with Shotgun",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Shotgun",
+      "count": 300
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 900
+    },
+    "hidden": true
+  },
+  {
+    "id": "rocket_kills_20",
+    "name": "Rocket Scientist",
+    "description": "Kill 20 enemies with Rocket Launcher",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Rocket Launcher",
+      "count": 20
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 250
+    },
+    "hidden": false
+  },
+  {
+    "id": "rocket_kills_200",
+    "name": "Rocket Expert",
+    "description": "Kill 200 enemies with Rocket Launcher",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Rocket Launcher",
+      "count": 200
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 1250
+    },
+    "hidden": true
+  },
+  {
+    "id": "minigun_kills_100",
+    "name": "Minigun Maniac",
+    "description": "Kill 100 enemies with Minigun",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Minigun",
+      "count": 100
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 300
+    },
+    "hidden": false
+  },
+  {
+    "id": "minigun_kills_1000",
+    "name": "Minigun God",
+    "description": "Kill 1000 enemies with Minigun",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Minigun",
+      "count": 1000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 1500
+    },
+    "hidden": true
+  },
+  {
+    "id": "sword_kills_25",
+    "name": "Swordsman",
+    "description": "Kill 25 enemies with Sword",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Sword",
+      "count": 25
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 200
+    },
+    "hidden": false
+  },
+  {
+    "id": "sword_kills_250",
+    "name": "Sword Master",
+    "description": "Kill 250 enemies with Sword",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Sword",
+      "count": 250
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 1000
+    },
+    "hidden": true
+  },
+  {
+    "id": "distance_traveled_10000",
+    "name": "Wanderer",
+    "description": "Travel 10,000 pixels",
+    "category": "exploration",
+    "character_id": null,
+    "requirement": {
+      "type": "distance_traveled",
+      "count": 10000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 100
+    },
+    "hidden": false
+  },
+  {
+    "id": "distance_traveled_100000",
+    "name": "Explorer",
+    "description": "Travel 100,000 pixels",
+    "category": "exploration",
+    "character_id": null,
+    "requirement": {
+      "type": "distance_traveled",
+      "count": 100000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 500
+    },
+    "hidden": true
+  },
+  {
+    "id": "damage_dealt_10000",
+    "name": "Bruiser",
+    "description": "Deal 10,000 total damage",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "damage_dealt",
+      "count": 10000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 200
+    },
+    "hidden": false
+  },
+  {
+    "id": "damage_dealt_100000",
+    "name": "Destroyer",
+    "description": "Deal 100,000 total damage",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "damage_dealt",
+      "count": 100000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 1000
+    },
+    "hidden": true
+  },
+  {
+    "id": "accuracy_90",
+    "name": "Sharpshooter",
+    "description": "Achieve 90% accuracy",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "accuracy_achieved",
+      "percentage": 90
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 300
+    },
+    "hidden": false
+  },
+  {
+    "id": "accuracy_95",
+    "name": "Deadeye",
+    "description": "Achieve 95% accuracy",
+    "category": "combat",
+    "character_id": null,
+    "requirement": {
+      "type": "accuracy_achieved",
+      "percentage": 95
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 600
+    },
+    "hidden": true
+  },
+  {
+    "id": "special_attacks_50",
+    "name": "Specialist",
+    "description": "Use special attacks 50 times",
+    "category": "special",
+    "character_id": null,
+    "requirement": {
+      "type": "special_attacks_used",
+      "count": 50
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 150
+    },
+    "hidden": false
+  },
+  {
+    "id": "special_attacks_500",
+    "name": "Master Specialist",
+    "description": "Use special attacks 500 times",
+    "category": "special",
+    "character_id": null,
+    "requirement": {
+      "type": "special_attacks_used",
+      "count": 500
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 750
+    },
+    "hidden": true
+  },
+  {
+    "id": "burst_abilities_10",
+    "name": "Burster",
+    "description": "Use burst abilities 10 times",
+    "category": "special",
+    "character_id": null,
+    "requirement": {
+      "type": "burst_abilities_used",
+      "count": 10
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 200
+    },
+    "hidden": false
+  },
+  {
+    "id": "burst_abilities_100",
+    "name": "Burst Master",
+    "description": "Use burst abilities 100 times",
+    "category": "special",
+    "character_id": null,
+    "requirement": {
+      "type": "burst_abilities_used",
+      "count": 100
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 1000
+    },
+    "hidden": true
+  },
+  {
+    "id": "high_score_10000",
+    "name": "Score Hunter",
+    "description": "Achieve a score of 10,000",
+    "category": "special",
+    "character_id": null,
+    "requirement": {
+      "type": "high_score_achieved",
+      "score": 10000
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 250
+    },
+    "hidden": false
+  },
+  {
+    "id": "high_score_100000",
+    "name": "Score Master",
+    "description": "Achieve a score of 100,000",
+    "category": "special",
+    "character_id": null,
+    "requirement": {
+      "type": "high_score_achieved",
+      "score": 100000
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 1250
+    },
+    "hidden": true
+  },
+  {
+    "id": "time_played_60",
+    "name": "Dedicated",
+    "description": "Play for 60 minutes",
+    "category": "special",
+    "character_id": null,
+    "requirement": {
+      "type": "time_played",
+      "minutes": 60
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 300
+    },
+    "hidden": false
+  },
+  {
+    "id": "time_played_600",
+    "name": "Addicted",
+    "description": "Play for 600 minutes",
+    "category": "special",
+    "character_id": null,
+    "requirement": {
+      "type": "time_played",
+      "minutes": 600
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 1500
+    },
+    "hidden": true
+  },
+  {
+    "id": "cecil_first_boss",
+    "name": "Cecil's First Victory",
+    "description": "Defeat your first boss with Cecil",
+    "category": "character_specific",
+    "character_id": "cecil",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 1
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 100
+    },
+    "hidden": false
+  },
+  {
+    "id": "cecil_boss_master",
+    "name": "Cecil's Crusade",
+    "description": "Defeat 50 bosses with Cecil",
+    "category": "character_specific",
+    "character_id": "cecil",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 50
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 500
+    },
+    "hidden": false
+  },
+  {
+    "id": "cecil_wave_10",
+    "name": "Cecil's Endurance",
+    "description": "Survive to Wave 10 with Cecil",
+    "category": "character_specific",
+    "character_id": "cecil",
+    "requirement": {
+      "type": "complete_stage",
+      "stage": 10
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 300
+    },
+    "hidden": false
+  },
+  {
+    "id": "cecil_damage_50000",
+    "name": "Cecil's Fury",
+    "description": "Deal 50,000 damage with Cecil",
+    "category": "character_specific",
+    "character_id": "cecil",
+    "requirement": {
+      "type": "damage_dealt",
+      "count": 50000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 400
+    },
+    "hidden": false
+  },
+  {
+    "id": "cecil_sniper_master",
+    "name": "Cecil's Precision",
+    "description": "Kill 100 enemies with Sniper Rifle as Cecil",
+    "category": "character_specific",
+    "character_id": "cecil",
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Sniper",
+      "count": 100
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 350
+    },
+    "hidden": false
+  },
+  {
+    "id": "commander_first_boss",
+    "name": "Commander's First Victory",
+    "description": "Defeat your first boss with Legendary Commander",
+    "category": "character_specific",
+    "character_id": "commander",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 1
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 100
+    },
+    "hidden": false
+  },
+  {
+    "id": "commander_boss_master",
+    "name": "Commander's Conquest",
+    "description": "Defeat 50 bosses with Legendary Commander",
+    "category": "character_specific",
+    "character_id": "commander",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 50
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 500
+    },
+    "hidden": false
+  },
+  {
+    "id": "commander_wave_10",
+    "name": "Commander's Leadership",
+    "description": "Survive to Wave 10 with Legendary Commander",
+    "category": "character_specific",
+    "character_id": "commander",
+    "requirement": {
+      "type": "complete_stage",
+      "stage": 10
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 300
+    },
+    "hidden": false
+  },
+  {
+    "id": "commander_damage_50000",
+    "name": "Commander's Might",
+    "description": "Deal 50,000 damage with Legendary Commander",
+    "category": "character_specific",
+    "character_id": "commander",
+    "requirement": {
+      "type": "damage_dealt",
+      "count": 50000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 400
+    },
+    "hidden": false
+  },
+  {
+    "id": "commander_rocket_master",
+    "name": "Commander's Artillery",
+    "description": "Kill 100 enemies with Rocket Launcher as Legendary Commander",
+    "category": "character_specific",
+    "character_id": "commander",
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Rocket Launcher",
+      "count": 100
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 350
+    },
+    "hidden": false
+  },
+  {
+    "id": "crown_first_boss",
+    "name": "Crown's First Victory",
+    "description": "Defeat your first boss with Crown",
+    "category": "character_specific",
+    "character_id": "crown",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 1
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 100
+    },
+    "hidden": false
+  },
+  {
+    "id": "crown_boss_master",
+    "name": "Crown's Dominion",
+    "description": "Defeat 50 bosses with Crown",
+    "category": "character_specific",
+    "character_id": "crown",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 50
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 500
+    },
+    "hidden": false
+  },
+  {
+    "id": "crown_wave_10",
+    "name": "Crown's Reign",
+    "description": "Survive to Wave 10 with Crown",
+    "category": "character_specific",
+    "character_id": "crown",
+    "requirement": {
+      "type": "complete_stage",
+      "stage": 10
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 300
+    },
+    "hidden": false
+  },
+  {
+    "id": "crown_damage_50000",
+    "name": "Crown's Authority",
+    "description": "Deal 50,000 damage with Crown",
+    "category": "character_specific",
+    "character_id": "crown",
+    "requirement": {
+      "type": "damage_dealt",
+      "count": 50000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 400
+    },
+    "hidden": false
+  },
+  {
+    "id": "crown_burst_master",
+    "name": "Crown's Majesty",
+    "description": "Use burst abilities 50 times with Crown",
+    "category": "character_specific",
+    "character_id": "crown",
+    "requirement": {
+      "type": "burst_abilities_used",
+      "count": 50
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 350
+    },
+    "hidden": false
+  },
+  {
+    "id": "kilo_first_boss",
+    "name": "Kilo's First Victory",
+    "description": "Defeat your first boss with Kilo",
+    "category": "character_specific",
+    "character_id": "kilo",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 1
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 100
+    },
+    "hidden": false
+  },
+  {
+    "id": "kilo_boss_master",
+    "name": "Kilo's Assault",
+    "description": "Defeat 50 bosses with Kilo",
+    "category": "character_specific",
+    "character_id": "kilo",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 50
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 500
+    },
+    "hidden": false
+  },
+  {
+    "id": "kilo_wave_10",
+    "name": "Kilo's Tenacity",
+    "description": "Survive to Wave 10 with Kilo",
+    "category": "character_specific",
+    "character_id": "kilo",
+    "requirement": {
+      "type": "complete_stage",
+      "stage": 10
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 300
+    },
+    "hidden": false
+  },
+  {
+    "id": "kilo_damage_50000",
+    "name": "Kilo's Barrage",
+    "description": "Deal 50,000 damage with Kilo",
+    "category": "character_specific",
+    "character_id": "kilo",
+    "requirement": {
+      "type": "damage_dealt",
+      "count": 50000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 400
+    },
+    "hidden": false
+  },
+  {
+    "id": "kilo_minigun_master",
+    "name": "Kilo's Fury",
+    "description": "Kill 500 enemies with Minigun as Kilo",
+    "category": "character_specific",
+    "character_id": "kilo",
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Minigun",
+      "count": 500
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 350
+    },
+    "hidden": false
+  },
+  {
+    "id": "marian_first_boss",
+    "name": "Marian's First Victory",
+    "description": "Defeat your first boss with Marian",
+    "category": "character_specific",
+    "character_id": "marian",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 1
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 100
+    },
+    "hidden": false
+  },
+  {
+    "id": "marian_boss_master",
+    "name": "Marian's Valor",
+    "description": "Defeat 50 bosses with Marian",
+    "category": "character_specific",
+    "character_id": "marian",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 50
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 500
+    },
+    "hidden": false
+  },
+  {
+    "id": "marian_wave_10",
+    "name": "Marian's Resolve",
+    "description": "Survive to Wave 10 with Marian",
+    "category": "character_specific",
+    "character_id": "marian",
+    "requirement": {
+      "type": "complete_stage",
+      "stage": 10
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 300
+    },
+    "hidden": false
+  },
+  {
+    "id": "marian_damage_50000",
+    "name": "Marian's Strike",
+    "description": "Deal 50,000 damage with Marian",
+    "category": "character_specific",
+    "character_id": "marian",
+    "requirement": {
+      "type": "damage_dealt",
+      "count": 50000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 400
+    },
+    "hidden": false
+  },
+  {
+    "id": "marian_sword_master",
+    "name": "Marian's Blade",
+    "description": "Kill 100 enemies with Sword as Marian",
+    "category": "character_specific",
+    "character_id": "marian",
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Sword",
+      "count": 100
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 350
+    },
+    "hidden": false
+  },
+  {
+    "id": "rapunzel_first_boss",
+    "name": "Rapunzel's First Victory",
+    "description": "Defeat your first boss with Rapunzel",
+    "category": "character_specific",
+    "character_id": "rapunzel",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 1
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 100
+    },
+    "hidden": false
+  },
+  {
+    "id": "rapunzel_boss_master",
+    "name": "Rapunzel's Tower",
+    "description": "Defeat 50 bosses with Rapunzel",
+    "category": "character_specific",
+    "character_id": "rapunzel",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 50
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 500
+    },
+    "hidden": false
+  },
+  {
+    "id": "rapunzel_wave_10",
+    "name": "Rapunzel's Climb",
+    "description": "Survive to Wave 10 with Rapunzel",
+    "category": "character_specific",
+    "character_id": "rapunzel",
+    "requirement": {
+      "type": "complete_stage",
+      "stage": 10
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 300
+    },
+    "hidden": false
+  },
+  {
+    "id": "rapunzel_damage_50000",
+    "name": "Rapunzel's Magic",
+    "description": "Deal 50,000 damage with Rapunzel",
+    "category": "character_specific",
+    "character_id": "rapunzel",
+    "requirement": {
+      "type": "damage_dealt",
+      "count": 50000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 400
+    },
+    "hidden": false
+  },
+  {
+    "id": "rapunzel_special_master",
+    "name": "Rapunzel's Enchantment",
+    "description": "Use special attacks 100 times with Rapunzel",
+    "category": "character_specific",
+    "character_id": "rapunzel",
+    "requirement": {
+      "type": "special_attacks_used",
+      "count": 100
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 350
+    },
+    "hidden": false
+  },
+  {
+    "id": "scarlet_first_boss",
+    "name": "Scarlet's First Victory",
+    "description": "Defeat your first boss with Scarlet",
+    "category": "character_specific",
+    "character_id": "scarlet",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 1
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 100
+    },
+    "hidden": false
+  },
+  {
+    "id": "scarlet_boss_master",
+    "name": "Scarlet's Hunt",
+    "description": "Defeat 50 bosses with Scarlet",
+    "category": "character_specific",
+    "character_id": "scarlet",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 50
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 500
+    },
+    "hidden": false
+  },
+  {
+    "id": "scarlet_wave_10",
+    "name": "Scarlet's Pursuit",
+    "description": "Survive to Wave 10 with Scarlet",
+    "category": "character_specific",
+    "character_id": "scarlet",
+    "requirement": {
+      "type": "complete_stage",
+      "stage": 10
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 300
+    },
+    "hidden": false
+  },
+  {
+    "id": "scarlet_damage_50000",
+    "name": "Scarlet's Fury",
+    "description": "Deal 50,000 damage with Scarlet",
+    "category": "character_specific",
+    "character_id": "scarlet",
+    "requirement": {
+      "type": "damage_dealt",
+      "count": 50000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 400
+    },
+    "hidden": false
+  },
+  {
+    "id": "scarlet_shotgun_master",
+    "name": "Scarlet's Blast",
+    "description": "Kill 150 enemies with Shotgun as Scarlet",
+    "category": "character_specific",
+    "character_id": "scarlet",
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Shotgun",
+      "count": 150
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 350
+    },
+    "hidden": false
+  },
+  {
+    "id": "sin_first_boss",
+    "name": "Sin's First Victory",
+    "description": "Defeat your first boss with Sin",
+    "category": "character_specific",
+    "character_id": "sin",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 1
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 100
+    },
+    "hidden": false
+  },
+  {
+    "id": "sin_boss_master",
+    "name": "Sin's Dominion",
+    "description": "Defeat 50 bosses with Sin",
+    "category": "character_specific",
+    "character_id": "sin",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 50
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 500
+    },
+    "hidden": false
+  },
+  {
+    "id": "sin_wave_10",
+    "name": "Sin's Temptation",
+    "description": "Survive to Wave 10 with Sin",
+    "category": "character_specific",
+    "character_id": "sin",
+    "requirement": {
+      "type": "complete_stage",
+      "stage": 10
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 300
+    },
+    "hidden": false
+  },
+  {
+    "id": "sin_damage_50000",
+    "name": "Sin's Wrath",
+    "description": "Deal 50,000 damage with Sin",
+    "category": "character_specific",
+    "character_id": "sin",
+    "requirement": {
+      "type": "damage_dealt",
+      "count": 50000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 400
+    },
+    "hidden": false
+  },
+  {
+    "id": "sin_smg_master",
+    "name": "Sin's Rhythm",
+    "description": "Kill 250 enemies with SMG as Sin",
+    "category": "character_specific",
+    "character_id": "sin",
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "SMG",
+      "count": 250
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 350
+    },
+    "hidden": false
+  },
+  {
+    "id": "snow-white_first_boss",
+    "name": "Snow White's First Victory",
+    "description": "Defeat your first boss with Snow White",
+    "category": "character_specific",
+    "character_id": "snow-white",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 1
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 100
+    },
+    "hidden": false
+  },
+  {
+    "id": "snow-white_boss_master",
+    "name": "Snow White's Grace",
+    "description": "Defeat 50 bosses with Snow White",
+    "category": "character_specific",
+    "character_id": "snow-white",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 50
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 500
+    },
+    "hidden": false
+  },
+  {
+    "id": "snow-white_wave_10",
+    "name": "Snow White's Tale",
+    "description": "Survive to Wave 10 with Snow White",
+    "category": "character_specific",
+    "character_id": "snow-white",
+    "requirement": {
+      "type": "complete_stage",
+      "stage": 10
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 300
+    },
+    "hidden": false
+  },
+  {
+    "id": "snow-white_damage_50000",
+    "name": "Snow White's Charm",
+    "description": "Deal 50,000 damage with Snow White",
+    "category": "character_specific",
+    "character_id": "snow-white",
+    "requirement": {
+      "type": "damage_dealt",
+      "count": 50000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 400
+    },
+    "hidden": false
+  },
+  {
+    "id": "snow-white_rifle_master",
+    "name": "Snow White's Aim",
+    "description": "Kill 250 enemies with Assault Rifle as Snow White",
+    "category": "character_specific",
+    "character_id": "snow-white",
+    "requirement": {
+      "type": "weapon_kills",
+      "weapon": "Assault Rifle",
+      "count": 250
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 350
+    },
+    "hidden": false
+  },
+  {
+    "id": "trony_first_boss",
+    "name": "Trony's First Victory",
+    "description": "Defeat your first boss with Trony",
+    "category": "character_specific",
+    "character_id": "trony",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 1
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 100
+    },
+    "hidden": false
+  },
+  {
+    "id": "trony_boss_master",
+    "name": "Trony's Command",
+    "description": "Defeat 50 bosses with Trony",
+    "category": "character_specific",
+    "character_id": "trony",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 50
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 500
+    },
+    "hidden": false
+  },
+  {
+    "id": "trony_wave_10",
+    "name": "Trony's Strategy",
+    "description": "Survive to Wave 10 with Trony",
+    "category": "character_specific",
+    "character_id": "trony",
+    "requirement": {
+      "type": "complete_stage",
+      "stage": 10
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 300
+    },
+    "hidden": false
+  },
+  {
+    "id": "trony_damage_50000",
+    "name": "Trony's Tactics",
+    "description": "Deal 50,000 damage with Trony",
+    "category": "character_specific",
+    "character_id": "trony",
+    "requirement": {
+      "type": "damage_dealt",
+      "count": 50000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 400
+    },
+    "hidden": false
+  },
+  {
+    "id": "trony_burst_master",
+    "name": "Trony's Brilliance",
+    "description": "Use burst abilities 75 times with Trony",
+    "category": "character_specific",
+    "character_id": "trony",
+    "requirement": {
+      "type": "burst_abilities_used",
+      "count": 75
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 350
+    },
+    "hidden": false
+  },
+  {
+    "id": "wells_first_boss",
+    "name": "Wells' First Victory",
+    "description": "Defeat your first boss with Wells",
+    "category": "character_specific",
+    "character_id": "wells",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 1
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 100
+    },
+    "hidden": false
+  },
+  {
+    "id": "wells_boss_master",
+    "name": "Wells' Journey",
+    "description": "Defeat 50 bosses with Wells",
+    "category": "character_specific",
+    "character_id": "wells",
+    "requirement": {
+      "type": "kill_bosses",
+      "count": 50
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 500
+    },
+    "hidden": false
+  },
+  {
+    "id": "wells_wave_10",
+    "name": "Wells' Adventure",
+    "description": "Survive to Wave 10 with Wells",
+    "category": "character_specific",
+    "character_id": "wells",
+    "requirement": {
+      "type": "complete_stage",
+      "stage": 10
+    },
+    "progress_type": "one_shot",
+    "reward": {
+      "currency": 300
+    },
+    "hidden": false
+  },
+  {
+    "id": "wells_damage_50000",
+    "name": "Wells' Discovery",
+    "description": "Deal 50,000 damage with Wells",
+    "category": "character_specific",
+    "character_id": "wells",
+    "requirement": {
+      "type": "damage_dealt",
+      "count": 50000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 400
+    },
+    "hidden": false
+  },
+  {
+    "id": "wells_distance_master",
+    "name": "Wells' Expedition",
+    "description": "Travel 50,000 pixels with Wells",
+    "category": "character_specific",
+    "character_id": "wells",
+    "requirement": {
+      "type": "distance_traveled",
+      "count": 50000
+    },
+    "progress_type": "accumulative",
+    "reward": {
+      "currency": 350
+    },
+    "hidden": false
+  }
+]

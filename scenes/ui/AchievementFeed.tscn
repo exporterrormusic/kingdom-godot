@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://src/ui/achievement_feed.gd" type="Script" id=1]
+
+[node name="AchievementFeed" type="Control"]
+layout_mode = 3
+anchor_left = 0.75
+anchor_top = 0.05
+anchor_right = 0.95
+anchor_bottom = 0.5
+mouse_filter = 2
+script = ExtResource(1)
+
+[node name="ToastContainer" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+alignment = 2
+separation = 8

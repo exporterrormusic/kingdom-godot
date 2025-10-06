@@ -1,0 +1,62 @@
+[gd_resource type="Resource" load_steps=10 format=3]
+
+[ext_resource path="res://src/resources/achievement_catalog.gd" type="Script" id=1]
+[ext_resource path="res://src/resources/achievement_data.gd" type="Script" id=2]
+
+[sub_resource type="Resource" id=1]
+script = ExtResource(2)
+id = "first_blood"
+name = "First Blood"
+description = "Defeat your first enemy."
+stat_key = "enemies_defeated"
+target_value = 1
+category = "Combat"
+
+[sub_resource type="Resource" id=2]
+script = ExtResource(2)
+id = "crowd_control"
+name = "Crowd Control"
+description = "Defeat 25 enemies."
+stat_key = "enemies_defeated"
+target_value = 25
+category = "Combat"
+
+[sub_resource type="Resource" id=3]
+script = ExtResource(2)
+id = "dash_initiate"
+name = "Momentum"
+description = "Perform 5 dashes."
+stat_key = "dashes_performed"
+target_value = 5
+category = "Mobility"
+
+[sub_resource type="Resource" id=4]
+script = ExtResource(2)
+id = "dash_master"
+name = "Blink and You'll Miss It"
+description = "Perform 25 dashes."
+stat_key = "dashes_performed"
+target_value = 25
+category = "Mobility"
+
+[sub_resource type="Resource" id=5]
+script = ExtResource(2)
+id = "trigger_disciple"
+name = "Trigger Discipline"
+description = "Launch 100 projectiles."
+stat_key = "projectiles_fired"
+target_value = 100
+category = "Weapons"
+
+[sub_resource type="Resource" id=6]
+script = ExtResource(2)
+id = "unstoppable"
+name = "Unstoppable"
+description = "Defeat 50 enemies in a single run."
+stat_key = "enemies_defeated_run"
+target_value = 50
+category = "Combat"
+
+[resource]
+script = ExtResource(1)
+achievements = [ SubResource(1), SubResource(2), SubResource(3), SubResource(4), SubResource(5), SubResource(6) ]

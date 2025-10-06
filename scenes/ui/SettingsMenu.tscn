@@ -1,0 +1,625 @@
+[gd_scene load_steps=6 format=3 uid="uid://csrwwajnkhqwa"]
+
+[ext_resource type="Script" uid="uid://bvvgdvhrg0j0a" path="res://src/ui/settings_menu.gd" id="1"]
+[ext_resource type="Script" uid="uid://diqkjdh831y5b" path="res://src/ui/components/venetian_blinds_background.gd" id="2"]
+[ext_resource type="FontFile" path="res://resources/fonts/pretendard_bold.tres" id="4"]
+
+[sub_resource type="StyleBoxFlat" id="2"]
+bg_color = Color(0.0823529, 0.0823529, 0.117647, 0.88)
+border_color = Color(0.407843, 0.407843, 0.509804, 0.85)
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_right = 0
+corner_radius_bottom_left = 0
+border_width_left = 2
+border_width_top = 3
+border_width_right = 2
+border_width_bottom = 3
+
+[sub_resource type="StyleBoxFlat" id="3"]
+bg_color = Color(0.0588235, 0.0588235, 0.0862745, 0.85)
+border_color = Color(0.364706, 0.364706, 0.454902, 0.85)
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_right = 0
+corner_radius_bottom_left = 0
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="4"]
+bg_color = Color(0.0862745, 0.0862745, 0.121569, 0.92)
+border_color = Color(0.388235, 0.388235, 0.498039, 0.9)
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_right = 0
+corner_radius_bottom_left = 0
+border_width_left = 2
+border_width_top = 3
+border_width_right = 2
+border_width_bottom = 3
+content_margin_left = 24.0
+content_margin_right = 24.0
+content_margin_top = 18.0
+content_margin_bottom = 18.0
+
+[sub_resource type="StyleBoxFlat" id="5"]
+bg_color = Color(0.113725, 0.113725, 0.156863, 0.94)
+border_color = Color(0.517647, 0.517647, 0.611765, 0.95)
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_right = 0
+corner_radius_bottom_left = 0
+border_width_left = 2
+border_width_top = 3
+border_width_right = 2
+border_width_bottom = 3
+content_margin_left = 24.0
+content_margin_right = 24.0
+content_margin_top = 18.0
+content_margin_bottom = 18.0
+
+[sub_resource type="StyleBoxFlat" id="6"]
+bg_color = Color(0.886275, 0.886275, 0.92549, 1)
+border_color = Color(0.905882, 0.470588, 0.470588, 1)
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_right = 0
+corner_radius_bottom_left = 0
+border_width_left = 2
+border_width_top = 3
+border_width_right = 2
+border_width_bottom = 3
+content_margin_left = 24.0
+content_margin_right = 24.0
+content_margin_top = 18.0
+content_margin_bottom = 18.0
+
+[node name="SettingsMenu" type="Control"]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+metadata/_edit_vertical_guides_ = [960.0]
+metadata/_edit_horizontal_guides_ = [541.0, 767.0, 983.0]
+
+[node name="Background" type="Control" parent="."]
+unique_name_in_owner = true
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("2")
+
+[node name="Overlay" type="ColorRect" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.18)
+
+[node name="UiRoot" type="Control" parent="."]
+unique_name_in_owner = true
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="ContentPanel" type="Panel" parent="UiRoot"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -660.0
+offset_top = -470.0
+offset_right = 660.0
+offset_bottom = 250.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("2")
+
+[node name="ContentMargin" type="Control" parent="UiRoot/ContentPanel"]
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = 32.0
+offset_right = -32.0
+offset_bottom = -32.0
+
+[node name="AudioPanel" type="Control" parent="UiRoot/ContentPanel/ContentMargin"]
+unique_name_in_owner = true
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="AudioTitle" type="Label" parent="UiRoot/ContentPanel/ContentMargin/AudioPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -340.0
+offset_right = 340.0
+offset_bottom = 80.0
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 56
+text = "AUDIO SETTINGS"
+horizontal_alignment = 1
+
+[node name="MusicRow" type="Control" parent="UiRoot/ContentPanel/ContentMargin/AudioPanel"]
+anchors_preset = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -560.0
+offset_top = 120.0
+offset_right = 560.0
+offset_bottom = 180.0
+
+[node name="MusicLabel" type="Label" parent="UiRoot/ContentPanel/ContentMargin/AudioPanel/MusicRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 260.0
+offset_bottom = 60.0
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 38
+text = "Music Volume"
+vertical_alignment = 1
+
+[node name="MusicSlider" type="HSlider" parent="UiRoot/ContentPanel/ContentMargin/AudioPanel/MusicRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 280.0
+offset_top = 12.0
+offset_right = 860.0
+offset_bottom = 52.0
+max_value = 1.0
+step = 0.01
+
+[node name="MusicValue" type="Label" parent="UiRoot/ContentPanel/ContentMargin/AudioPanel/MusicRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 900.0
+offset_top = 0.0
+offset_right = 1120.0
+offset_bottom = 60.0
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 34
+text = "100%"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SfxRow" type="Control" parent="UiRoot/ContentPanel/ContentMargin/AudioPanel"]
+anchors_preset = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -560.0
+offset_top = 220.0
+offset_right = 560.0
+offset_bottom = 280.0
+
+[node name="SfxLabel" type="Label" parent="UiRoot/ContentPanel/ContentMargin/AudioPanel/SfxRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 260.0
+offset_bottom = 60.0
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 38
+text = "SFX Volume"
+vertical_alignment = 1
+
+[node name="SfxSlider" type="HSlider" parent="UiRoot/ContentPanel/ContentMargin/AudioPanel/SfxRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 280.0
+offset_top = 12.0
+offset_right = 860.0
+offset_bottom = 52.0
+max_value = 1.0
+step = 0.01
+
+[node name="SfxValue" type="Label" parent="UiRoot/ContentPanel/ContentMargin/AudioPanel/SfxRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 900.0
+offset_top = 0.0
+offset_right = 1120.0
+offset_bottom = 60.0
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 34
+text = "100%"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VideoPanel" type="Control" parent="UiRoot/ContentPanel/ContentMargin"]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VideoTitle" type="Label" parent="UiRoot/ContentPanel/ContentMargin/VideoPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -340.0
+offset_right = 340.0
+offset_bottom = 80.0
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 56
+text = "VIDEO SETTINGS"
+horizontal_alignment = 1
+
+[node name="ResolutionRow" type="Control" parent="UiRoot/ContentPanel/ContentMargin/VideoPanel"]
+anchors_preset = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -560.0
+offset_top = 120.0
+offset_right = 560.0
+offset_bottom = 180.0
+
+[node name="ResolutionLabel" type="Label" parent="UiRoot/ContentPanel/ContentMargin/VideoPanel/ResolutionRow"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 260.0
+offset_bottom = 60.0
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 38
+text = "Resolution"
+vertical_alignment = 1
+
+[node name="ResolutionOptions" type="OptionButton" parent="UiRoot/ContentPanel/ContentMargin/VideoPanel/ResolutionRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 280.0
+offset_top = 12.0
+offset_right = 860.0
+offset_bottom = 60.0
+custom_minimum_size = Vector2(580, 64)
+
+[node name="FullscreenRow" type="Control" parent="UiRoot/ContentPanel/ContentMargin/VideoPanel"]
+anchors_preset = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -560.0
+offset_top = 220.0
+offset_right = 560.0
+offset_bottom = 280.0
+
+[node name="FullscreenLabel" type="Label" parent="UiRoot/ContentPanel/ContentMargin/VideoPanel/FullscreenRow"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 260.0
+offset_bottom = 60.0
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 38
+text = "Fullscreen"
+vertical_alignment = 1
+
+[node name="FullscreenOptions" type="OptionButton" parent="UiRoot/ContentPanel/ContentMargin/VideoPanel/FullscreenRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 280.0
+offset_top = 12.0
+offset_right = 860.0
+offset_bottom = 60.0
+custom_minimum_size = Vector2(580, 64)
+
+[node name="ControlsPanel" type="Control" parent="UiRoot/ContentPanel/ContentMargin"]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="ControlsTitle" type="Label" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -360.0
+offset_right = 360.0
+offset_bottom = 80.0
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 56
+text = "CONTROL SETTINGS"
+horizontal_alignment = 1
+
+[node name="MovementColumn" type="Control" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel"]
+anchors_preset = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -560.0
+offset_top = 120.0
+offset_right = -20.0
+offset_bottom = 420.0
+
+[node name="MoveUpRow" type="Control" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/MovementColumn"]
+anchors_preset = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 540.0
+offset_bottom = 70.0
+
+[node name="MoveUpLabel" type="Label" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/MovementColumn/MoveUpRow"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 260.0
+offset_bottom = 70.0
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 34
+text = "Move Up"
+vertical_alignment = 1
+
+[node name="MoveUpButton" type="Button" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/MovementColumn/MoveUpRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 280.0
+offset_top = 10.0
+offset_right = 520.0
+offset_bottom = 60.0
+custom_minimum_size = Vector2(260, 56)
+
+[node name="MoveDownRow" type="Control" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/MovementColumn"]
+anchors_preset = 0
+offset_left = 0.0
+offset_top = 90.0
+offset_right = 540.0
+offset_bottom = 160.0
+
+[node name="MoveDownLabel" type="Label" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/MovementColumn/MoveDownRow"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 260.0
+offset_bottom = 70.0
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 34
+text = "Move Down"
+vertical_alignment = 1
+
+[node name="MoveDownButton" type="Button" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/MovementColumn/MoveDownRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 280.0
+offset_top = 10.0
+offset_right = 520.0
+offset_bottom = 60.0
+custom_minimum_size = Vector2(260, 56)
+
+[node name="MoveLeftRow" type="Control" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/MovementColumn"]
+anchors_preset = 0
+offset_left = 0.0
+offset_top = 180.0
+offset_right = 540.0
+offset_bottom = 250.0
+
+[node name="MoveLeftLabel" type="Label" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/MovementColumn/MoveLeftRow"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 260.0
+offset_bottom = 70.0
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 34
+text = "Move Left"
+vertical_alignment = 1
+
+[node name="MoveLeftButton" type="Button" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/MovementColumn/MoveLeftRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 280.0
+offset_top = 10.0
+offset_right = 520.0
+offset_bottom = 60.0
+custom_minimum_size = Vector2(260, 56)
+
+[node name="MoveRightRow" type="Control" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/MovementColumn"]
+anchors_preset = 0
+offset_left = 0.0
+offset_top = 270.0
+offset_right = 540.0
+offset_bottom = 340.0
+
+[node name="MoveRightLabel" type="Label" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/MovementColumn/MoveRightRow"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 260.0
+offset_bottom = 70.0
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 34
+text = "Move Right"
+vertical_alignment = 1
+
+[node name="MoveRightButton" type="Button" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/MovementColumn/MoveRightRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 280.0
+offset_top = 10.0
+offset_right = 520.0
+offset_bottom = 60.0
+custom_minimum_size = Vector2(260, 56)
+
+[node name="ActionsColumn" type="Control" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel"]
+anchors_preset = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = 20.0
+offset_top = 120.0
+offset_right = 560.0
+offset_bottom = 420.0
+
+[node name="DashRow" type="Control" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/ActionsColumn"]
+anchors_preset = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 540.0
+offset_bottom = 70.0
+
+[node name="DashLabel" type="Label" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/ActionsColumn/DashRow"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 260.0
+offset_bottom = 70.0
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 34
+text = "Dash"
+vertical_alignment = 1
+
+[node name="DashButton" type="Button" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/ActionsColumn/DashRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 300.0
+offset_top = 10.0
+offset_right = 540.0
+offset_bottom = 60.0
+custom_minimum_size = Vector2(260, 56)
+
+[node name="BurstRow" type="Control" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/ActionsColumn"]
+anchors_preset = 0
+offset_left = 0.0
+offset_top = 90.0
+offset_right = 540.0
+offset_bottom = 160.0
+
+[node name="BurstLabel" type="Label" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/ActionsColumn/BurstRow"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 260.0
+offset_bottom = 70.0
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 34
+text = "Burst"
+vertical_alignment = 1
+
+[node name="BurstButton" type="Button" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/ActionsColumn/BurstRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 300.0
+offset_top = 10.0
+offset_right = 540.0
+offset_bottom = 60.0
+custom_minimum_size = Vector2(260, 56)
+
+[node name="PauseRow" type="Control" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/ActionsColumn"]
+anchors_preset = 0
+offset_left = 0.0
+offset_top = 180.0
+offset_right = 540.0
+offset_bottom = 250.0
+
+[node name="PauseLabel" type="Label" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/ActionsColumn/PauseRow"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 260.0
+offset_bottom = 70.0
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 34
+text = "Pause"
+vertical_alignment = 1
+
+[node name="PauseButton" type="Button" parent="UiRoot/ContentPanel/ContentMargin/ControlsPanel/ActionsColumn/PauseRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 300.0
+offset_top = 10.0
+offset_right = 540.0
+offset_bottom = 60.0
+custom_minimum_size = Vector2(260, 56)
+
+[node name="TabsBar" type="Panel" parent="UiRoot"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = -260.0
+offset_right = 0.0
+offset_bottom = -90.0
+theme_override_styles/panel = SubResource("3")
+
+[node name="TabsMargin" type="HBoxContainer" parent="UiRoot/TabsBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = 12.0
+offset_right = -32.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="AudioTab" type="Button" parent="UiRoot/TabsBar/TabsMargin"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 132)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("4")
+theme_override_styles/hover = SubResource("5")
+theme_override_styles/pressed = SubResource("6")
+theme_override_styles/focus = SubResource("4")
+theme_override_styles/disabled = SubResource("4")
+theme_override_styles/hover_pressed = SubResource("6")
+theme_override_colors/font_color = Color(0.862745, 0.862745, 0.905882, 1)
+theme_override_colors/font_color_hover = Color(0.956863, 0.956863, 1, 1)
+theme_override_colors/font_color_pressed = Color(0.2, 0.2, 0.2, 1)
+text = "AUDIO"
+
+[node name="VideoTab" type="Button" parent="UiRoot/TabsBar/TabsMargin"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 132)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("4")
+theme_override_styles/hover = SubResource("5")
+theme_override_styles/pressed = SubResource("6")
+theme_override_styles/focus = SubResource("4")
+theme_override_styles/disabled = SubResource("4")
+theme_override_styles/hover_pressed = SubResource("6")
+theme_override_colors/font_color = Color(0.862745, 0.862745, 0.905882, 1)
+theme_override_colors/font_color_hover = Color(0.956863, 0.956863, 1, 1)
+theme_override_colors/font_color_pressed = Color(0.2, 0.2, 0.2, 1)
+text = "VIDEO"
+
+[node name="ControlsTab" type="Button" parent="UiRoot/TabsBar/TabsMargin"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 132)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("4")
+theme_override_styles/hover = SubResource("5")
+theme_override_styles/pressed = SubResource("6")
+theme_override_styles/focus = SubResource("4")
+theme_override_styles/disabled = SubResource("4")
+theme_override_styles/hover_pressed = SubResource("6")
+theme_override_colors/font_color = Color(0.862745, 0.862745, 0.905882, 1)
+theme_override_colors/font_color_hover = Color(0.956863, 0.956863, 1, 1)
+theme_override_colors/font_color_pressed = Color(0.2, 0.2, 0.2, 1)
+text = "CONTROLS"
+

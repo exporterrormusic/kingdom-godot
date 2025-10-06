@@ -1,0 +1,23 @@
+{
+    "name": "Snow White",
+    "display_name": "Snow White",
+    "description": "Best girl.",
+    "weapon_name": "Seven Dwarves",
+    "weapon_type": "Sniper",
+    "stats": {
+        "speed": 150,
+        "hp": 80,
+        "burst_multiplier": 5
+    },
+    "sprite_info": {
+        "filename": "snow-white-sprite.png",
+        "frame_width": null,
+        "frame_height": null,
+        "animation_speed": 0.22
+    },
+    "burst_ability": {
+        "name": "Seven Dwarves: Fully Active",
+        "description": "Obliterate everything in a massive focused blast.",
+        "damage_multiplier": 1.5
+    }
+}
