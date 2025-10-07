@@ -18,6 +18,7 @@ const AudioDirectorScript := preload("res://src/services/audio_director.gd")
 const InputInitializerScript := preload("res://src/core/input_initializer.gd")
 const AchievementServiceScript := preload("res://src/services/achievement_service.gd")
 const MainMenuScene := preload("res://scenes/ui/MainMenu.tscn")
+const AchievementsMenuScene := preload("res://scenes/ui/AchievementsMenu.tscn")
 const WorldScene := preload("res://scenes/world/WorldScene.tscn")
 const SettingsMenuScene := preload("res://scenes/ui/SettingsMenu.tscn")
 const PauseMenuScene := preload("res://scenes/ui/PauseMenu.tscn")
@@ -38,6 +39,7 @@ var _overlay_scene: Node = null
 var _return_to_pause_after_settings := false
 var _character_roster: Resource = null
 var _selected_character: Resource = null
+var _selected_mission_config: Dictionary = {}
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_SIZE_CHANGED and _overlay_root:
@@ -198,13 +200,20 @@ func _mount_overlay(node: Node) -> void:
 		control.offset_top = 0.0
 		control.offset_right = 0.0
 		control.offset_bottom = 0.0
-		control.size = _overlay_root.size
+		control.set_deferred("size", _overlay_root.size)
 		control.position = Vector2.ZERO
 		control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		control.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		_overlay_root.add_child(control)
+		_set_main_menu_title_visible(false)
 	else:
 		_overlay_layer.add_child(node)
+
+func _set_main_menu_title_visible(should_show: bool) -> void:
+	if _current_scene and _current_scene is MainMenu:
+		var menu := _current_scene as MainMenu
+		if menu:
+			menu.set_title_panel_visible(should_show)
 
 func _on_state_changed(_previous_state: String, next_state: String) -> void:
 	_match_state(next_state)
@@ -433,10 +442,29 @@ func _on_settings_overlay_back() -> void:
 	if return_to_pause:
 		_show_pause_menu()
 
+func _on_achievements_requested() -> void:
+	_show_achievements_overlay()
+
+func _show_achievements_overlay() -> void:
+	_clear_overlay()
+	var achievements_menu: Control = AchievementsMenuScene.instantiate()
+	_overlay_scene = achievements_menu
+	_mount_overlay(achievements_menu)
+	if achievements_menu.has_method("set_achievement_service") and _achievement_service:
+		achievements_menu.set_achievement_service(_achievement_service)
+	if achievements_menu.has_method("set_roster") and _character_roster:
+		achievements_menu.set_roster(_character_roster)
+	if achievements_menu.has_signal("closed"):
+		achievements_menu.connect("closed", Callable(self, "_on_achievements_overlay_closed"))
+
+func _on_achievements_overlay_closed() -> void:
+	_clear_overlay()
+
 func _clear_overlay(unpause: bool = false) -> void:
 	if _overlay_scene:
 		_overlay_scene.queue_free()
 		_overlay_scene = null
+		_set_main_menu_title_visible(true)
 	if unpause:
 		get_tree().paused = false
 	_return_to_pause_after_settings = false
@@ -452,12 +480,28 @@ func _initialize_character_roster() -> void:
 		_selected_character = saved_character if saved_character else _character_roster.get_default_character()
 	else:
 		_selected_character = null
+	var stored_map_id := String(_config_service.get_value("last_map_id", ""))
+	var stored_biome_id := String(_config_service.get_value("last_biome_id", ""))
+	var stored_time_id := String(_config_service.get_value("last_time_of_day_id", ""))
+	var stored_seed := int(_config_service.get_value("last_environment_seed", 0))
+	var stored_random := bool(_config_service.get_value("last_random_events", false))
+	_selected_mission_config = {}
+	if stored_map_id != "" or stored_biome_id != "" or stored_time_id != "" or stored_seed != 0 or stored_random:
+		_selected_mission_config = {
+			"map_id": StringName(stored_map_id),
+			"biome_id": StringName(stored_biome_id),
+			"time_of_day_id": StringName(stored_time_id),
+			"environment_seed": stored_seed,
+			"random_events": stored_random
+		}
 
 func _configure_main_menu_scene(scene: Node) -> void:
 	if scene.has_signal("start_game_requested"):
 		scene.connect("start_game_requested", Callable(self, "_on_start_game_requested"))
 	if scene.has_signal("settings_requested"):
 		scene.connect("settings_requested", Callable(self, "_on_settings_requested"))
+	if scene.has_signal("achievements_requested"):
+		scene.connect("achievements_requested", Callable(self, "_on_achievements_requested"))
 	if scene.has_method("set_last_selected_character") and _selected_character:
 		scene.set_last_selected_character(_selected_character)
 
@@ -476,6 +520,8 @@ func _configure_character_select_scene(scene: Node) -> void:
 				code = value
 		if code != "":
 			scene.set_initial_selection(code)
+	if scene.has_method("set_mission_config") and not _selected_mission_config.is_empty():
+		scene.set_mission_config(_selected_mission_config.duplicate(true))
 
 func _configure_world_scene(scene: Node) -> void:
 	if scene.has_signal("exit_to_menu_requested"):
@@ -487,6 +533,13 @@ func _configure_world_scene(scene: Node) -> void:
 	var profile: Resource = _ensure_selected_character()
 	if scene.has_method("set_character_profile") and profile:
 		scene.set_character_profile(profile)
+	if scene.has_method("set_environment_profile"):
+		var mission_config: Dictionary = _selected_mission_config if _selected_mission_config else {}
+		var biome_id: StringName = mission_config.get("biome_id", StringName(""))
+		var time_id: StringName = mission_config.get("time_of_day_id", StringName(""))
+		var env_seed: int = int(mission_config.get("environment_seed", 0))
+		if biome_id != StringName("") or time_id != StringName("") or env_seed > 0:
+			scene.set_environment_profile(biome_id, time_id, env_seed)
 
 func _ensure_selected_character():
 	if _selected_character:
@@ -495,8 +548,13 @@ func _ensure_selected_character():
 		_selected_character = _character_roster.get_default_character()
 	return _selected_character
 
-func _on_character_confirmed(character) -> void:
+func _on_character_confirmed(character, mission_config: Dictionary = {}) -> void:
 	_selected_character = character
+	if mission_config:
+		_selected_mission_config = mission_config.duplicate(true)
+		_cache_last_mission_selection(_selected_mission_config)
+	else:
+		_selected_mission_config = {}
 	if _selected_character:
 		var code: String = ""
 		if _selected_character.has_method("get"):
@@ -509,3 +567,15 @@ func _on_character_confirmed(character) -> void:
 
 func _on_character_select_back() -> void:
 	change_state("menu")
+
+func _cache_last_mission_selection(config: Dictionary) -> void:
+	var map_id_value: Variant = config.get("map_id", "")
+	var biome_id_value: Variant = config.get("biome_id", "")
+	var time_id_value: Variant = config.get("time_of_day_id", "")
+	var seed_value: int = int(config.get("environment_seed", 0))
+	var random_events_value: bool = bool(config.get("random_events", false))
+	_config_service.set_value("last_map_id", String(map_id_value))
+	_config_service.set_value("last_biome_id", String(biome_id_value))
+	_config_service.set_value("last_time_of_day_id", String(time_id_value))
+	_config_service.set_value("last_environment_seed", seed_value)
+	_config_service.set_value("last_random_events", random_events_value)

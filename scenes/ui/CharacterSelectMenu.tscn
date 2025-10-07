@@ -35,6 +35,7 @@ script = ExtResource("2")
 layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
+mouse_filter = 2
 color = Color(0, 0, 0, 0.58)
 
 [node name="TitleBar" type="Control" parent="."]
@@ -65,6 +66,7 @@ vertical_alignment = 1
 
 [node name="ConfigurationPanel" type="Panel" parent="."]
 unique_name_in_owner = true
+visible = false
 layout_mode = 0
 anchor_left = 0.05
 anchor_top = 0.58
@@ -75,6 +77,7 @@ anchor_bottom = 0.955
 layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
+mouse_filter = 2
 color = Color(0.1, 0.1, 0.16, 0.92)
 
 [node name="ConfigurationBorder" type="ColorRect" parent="ConfigurationPanel"]
@@ -85,18 +88,20 @@ offset_left = -3.0
 offset_top = -3.0
 offset_right = 3.0
 offset_bottom = 3.0
+mouse_filter = 2
 color = Color(0.39, 0.39, 0.47, 0.9)
 
 [node name="ConfigurationContent" type="HBoxContainer" parent="ConfigurationPanel"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.03
-anchor_top = 0.1
-anchor_right = 0.97
+anchor_left = 0.04
+anchor_top = 0.08
+anchor_right = 0.96
 anchor_bottom = 0.92
-offset_top = -33.899963
-offset_bottom = 29.99997
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 0
 theme_override_constants/separation = 32
 
 [node name="MapPreviewColumn" type="VBoxContainer" parent="ConfigurationPanel/ConfigurationContent"]
@@ -120,6 +125,13 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_styles/panel = SubResource("1")
 
+[node name="MapPreviewViewport" type="SubViewport" parent="ConfigurationPanel/ConfigurationContent/MapPreviewColumn/MapPreviewFrame"]
+unique_name_in_owner = true
+disable_3d = true
+handle_input_locally = false
+render_target_clear_mode = 1
+render_target_update_mode = 3
+
 [node name="MapPreviewTexture" type="TextureRect" parent="ConfigurationPanel/ConfigurationContent/MapPreviewColumn/MapPreviewFrame"]
 unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0.95)
@@ -130,14 +142,14 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 expand_mode = 3
-stretch_mode = 6
+stretch_mode = 7
 
-[node name="MapPreviewHint" type="RichTextLabel" parent="ConfigurationPanel/ConfigurationContent/MapPreviewColumn"]
+[node name="MapDetails" type="RichTextLabel" parent="ConfigurationPanel/ConfigurationContent/MapPreviewColumn"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true
-text = "[center][color=#8FA3FF]Choose a map to update the preview.[/color][/center]"
-fit_content = true
+text = "[center][color=#8FA3FF]Select a mission map to view terrain and briefing.[/color][/center]"
 scroll_active = false
 
 [node name="ColumnDividerConfig" type="VSeparator" parent="ConfigurationPanel/ConfigurationContent"]
@@ -150,6 +162,7 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 2
 size_flags_vertical = 3
+mouse_filter = 0
 theme_override_constants/separation = 20
 
 [node name="ConfigurationTitle" type="Label" parent="ConfigurationPanel/ConfigurationContent/SetupColumn"]
@@ -178,7 +191,7 @@ theme_override_constants/separation = 12
 [node name="MapSectionLabel" type="Label" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/MapSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
-text = "Map"
+text = "Mission Map"
 
 [node name="MapSectionDivider" type="HSeparator" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/MapSection"]
 custom_minimum_size = Vector2(0, 4)
@@ -194,49 +207,41 @@ layout_mode = 2
 text = "Selection"
 horizontal_alignment = 2
 
-[node name="MapOptions" type="OptionButton" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/MapSection/MapRow"]
+[node name="MapOptions" type="MenuButton" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/MapSection/MapRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 2
-selected = 0
-item_count = 3
-popup/item_0/id = 0
-popup/item_1/id = 1
-popup/item_2/id = 2
+focus_mode = 2
 
-[node name="EnvironmentSection" type="VBoxContainer" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns"]
+[node name="TimeOfDaySection" type="VBoxContainer" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="EnvironmentLabel" type="Label" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/EnvironmentSection"]
+[node name="TimeOfDayLabel" type="Label" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/TimeOfDaySection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
-text = "Environment"
+text = "Time of Day"
 
-[node name="EnvironmentDivider" type="HSeparator" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/EnvironmentSection"]
+[node name="TimeOfDayDivider" type="HSeparator" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/TimeOfDaySection"]
 custom_minimum_size = Vector2(0, 4)
 layout_mode = 2
 
-[node name="EffectsRow" type="HBoxContainer" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/EnvironmentSection"]
+[node name="TimeOfDayRow" type="HBoxContainer" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/TimeOfDaySection"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="EffectsLabel" type="Label" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/EnvironmentSection/EffectsRow"]
+[node name="TimeOfDayLabelInner" type="Label" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/TimeOfDaySection/TimeOfDayRow"]
 layout_mode = 2
-text = "Conditions"
+text = "Selection"
 horizontal_alignment = 2
 
-[node name="EffectsOptions" type="OptionButton" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/EnvironmentSection/EffectsRow"]
+[node name="TimeOfDayOptions" type="MenuButton" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/TimeOfDaySection/TimeOfDayRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 2
-selected = 0
-item_count = 3
-popup/item_0/id = 0
-popup/item_1/id = 1
-popup/item_2/id = 2
+focus_mode = 2
 
 [node name="ModifiersSection" type="VBoxContainer" parent="ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns"]
 layout_mode = 2
@@ -273,7 +278,6 @@ layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true
 text = "[color=#C8D4FF]Pick a map and modifiers before deploying.[/color]"
-fit_content = true
 scroll_active = false
 
 [node name="ContentRoot" type="Control" parent="."]
@@ -369,8 +373,6 @@ custom_minimum_size = Vector2(220, 220)
 layout_mode = 2
 expand_mode = 3
 stretch_mode = 5
-texture_offset = Vector2(0, -48)
-scale = Vector2(0.8, 0.8)
 
 [node name="StatsContainer" type="VBoxContainer" parent="ContentRoot/DetailsPanel/DetailsContent/CharacterColumn/CharacterContentRow"]
 unique_name_in_owner = true

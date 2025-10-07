@@ -1,0 +1,200 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource path="res://src/ui/achievements_menu.gd" type="Script" id=1]
+[ext_resource path="res://src/ui/components/venetian_blinds_background.gd" type="Script" id=2]
+[ext_resource path="res://resources/fonts/futura_condensed_extra_bold.tres" type="FontFile" id=3]
+[ext_resource path="res://resources/fonts/pretendard_bold.tres" type="FontFile" id=4]
+[ext_resource path="res://resources/fonts/pretendard_medium.tres" type="FontFile" id=5]
+
+[sub_resource type="StyleBoxFlat" id=1]
+bg_color = Color(0.0705882, 0.0705882, 0.105882, 0.85)
+border_width_top = 2
+border_width_bottom = 2
+border_color = Color(0.388235, 0.388235, 0.466667, 0.9)
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_left = 0
+corner_radius_bottom_right = 0
+
+[sub_resource type="StyleBoxFlat" id=2]
+bg_color = Color(0.109804, 0.109804, 0.14902, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.4, 0.4, 0.498039, 1)
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_left = 0
+corner_radius_bottom_right = 0
+
+[sub_resource type="StyleBoxFlat" id=3]
+bg_color = Color(0.0392157, 0.0392157, 0.0666667, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.247059, 0.247059, 0.329412, 1)
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_left = 0
+corner_radius_bottom_right = 0
+
+[node name="AchievementsMenu" type="Control"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource(1)
+
+[node name="Background" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource(2)
+
+[node name="Overlay" type="ColorRect" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.25)
+
+[node name="UiRoot" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 24.0
+offset_right = 0.0
+offset_bottom = -24.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 24
+
+[node name="TitleBar" type="Panel" parent="UiRoot"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 120)
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource(1)
+
+[node name="TitleLabel" type="Label" parent="UiRoot/TitleBar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.0
+anchor_right = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+theme_override_fonts/font = ExtResource(3)
+theme_override_font_sizes/font_size = 90
+text = "ACHIEVEMENTS"
+horizontal_alignment = 0
+vertical_alignment = 1
+
+[node name="Content" type="HBoxContainer" parent="UiRoot"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 24
+
+[node name="LeftPanel" type="Panel" parent="UiRoot/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(720, 0)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource(2)
+
+[node name="LeftMargin" type="MarginContainer" parent="UiRoot/Content/LeftPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="CharacterScroll" type="ScrollContainer" parent="UiRoot/Content/LeftPanel/LeftMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+vertical_scroll_mode = 2
+horizontal_scroll_mode = 0
+scroll_deadzone = 8
+
+[node name="CharacterList" type="VBoxContainer" parent="UiRoot/Content/LeftPanel/LeftMargin/CharacterScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+theme_override_constants/separation = 16
+
+[node name="RightPanel" type="Panel" parent="UiRoot/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource(3)
+
+[node name="RightMargin" type="MarginContainer" parent="UiRoot/Content/RightPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="HeaderLabel" type="Label" parent="UiRoot/Content/RightPanel/RightMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 1
+theme_override_fonts/font = ExtResource(4)
+theme_override_font_sizes/font_size = 42
+text = "GENERAL ACHIEVEMENTS"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AchievementScroll" type="ScrollContainer" parent="UiRoot/Content/RightPanel/RightMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+vertical_scroll_mode = 2
+horizontal_scroll_mode = 0
+scroll_deadzone = 8
+
+[node name="AchievementList" type="VBoxContainer" parent="UiRoot/Content/RightPanel/RightMargin/AchievementScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+theme_override_constants/separation = 20
+
+[node name="EmptyStateLabel" type="Label" parent="UiRoot/Content/RightPanel/RightMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+visible = false
+text = "No achievements to show."
+horizontal_alignment = 1
+vertical_alignment = 1

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+
+[ext_resource path="res://src/world/environment/map_definition.gd" type="Script" id=1]
+[ext_resource path="res://assets/images/Menu/BKG/mushroom.jpg" type="Texture2D" id=2]
+
+[resource]
+script = ExtResource(1)
+map_id = &"ashen_sands"
+display_name = "Ashen Sands"
+description = "Wind-carved dunes and ruined machinery create unpredictable sightlines. Watch for sudden flank routes."
+preview_texture = ExtResource(2)
+biome_id = &"dunes"
+time_of_day_id = &"day"
+environment_seed = 992044
+available_time_ids = [&"day", &"night"]
+difficulty_label = "High Pressure"

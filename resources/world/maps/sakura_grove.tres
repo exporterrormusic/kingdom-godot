@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+
+[ext_resource path="res://src/world/environment/map_definition.gd" type="Script" id=1]
+[ext_resource path="res://assets/images/Menu/BKG/kingdom.jpg" type="Texture2D" id=2]
+
+[resource]
+script = ExtResource(1)
+map_id = &"sakura_grove"
+display_name = "Sakura Grove"
+description = "A blossom-lined valley with gentle slopes and reflective pools. Petals on the wind conceal tactical movement."
+preview_texture = ExtResource(2)
+biome_id = &"sakura_grove"
+time_of_day_id = &"day"
+environment_seed = 612884
+available_time_ids = [&"day", &"night"]
+difficulty_label = "Focused Assault"

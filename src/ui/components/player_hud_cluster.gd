@@ -339,7 +339,9 @@ func _ensure_square_image(image: Image) -> Image:
 	if padded == null:
 		return image
 	padded.fill(Color(0, 0, 0, 0))
-	var dest_position: Vector2i = Vector2i(int((square_size - width) / 2), int((square_size - height) / 2))
+	var dest_x := int(float(square_size - width) * 0.5)
+	var dest_y := int(float(square_size - height) * 0.5)
+	var dest_position: Vector2i = Vector2i(dest_x, dest_y)
 	var source_rect: Rect2i = Rect2i(Vector2i.ZERO, Vector2i(width, height))
 	padded.blit_rect(image, source_rect, dest_position)
 	if not Engine.is_editor_hint():
@@ -392,8 +394,8 @@ func _refresh_run_timer() -> void:
 	if not _run_timer_label:
 		return
 	var seconds: int = max(0, roundi(_run_time_seconds))
-	var hours: int = seconds / 3600
-	var minutes: int = (seconds % 3600) / 60
+	var hours: int = int(seconds / 3600.0)
+	var minutes: int = int((seconds % 3600) / 60.0)
 	var rem_seconds: int = seconds % 60
 	var time_text: String
 	if hours > 0:

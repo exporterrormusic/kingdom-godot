@@ -67,8 +67,8 @@ func _refresh_run_summary() -> void:
 
 func _format_time(total_seconds: float) -> String:
 	var seconds: int = max(0, roundi(total_seconds))
-	var hours: int = seconds / 3600
-	var minutes: int = (seconds % 3600) / 60
+	var hours: int = floori(float(seconds) / 3600.0)
+	var minutes: int = floori(float(seconds % 3600) / 60.0)
 	var rem_seconds: int = seconds % 60
 	if hours > 0:
 		return "%d:%02d:%02d" % [hours, minutes, rem_seconds]

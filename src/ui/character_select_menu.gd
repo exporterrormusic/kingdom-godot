@@ -2,10 +2,9 @@ extends Control
 class_name CharacterSelectMenu
 
 signal back_requested
-signal character_confirmed(character_data: CharacterData)
+signal character_confirmed(character_data: CharacterData, mission_config: Dictionary)
 
 const CharacterCardScene := preload("res://scenes/ui/components/CharacterCard.tscn")
-const CharacterCardScript := preload("res://src/ui/components/character_card.gd")
 const RANDOM_CODE := "RANDOM"
 const STAT_META := [
 	{"key": "hp", "label": "HP", "max": 500},
@@ -21,10 +20,16 @@ const CONFIG_PANEL_RAISE := 140.0
 const BUTTONS_RAISE := 80.0
 const CONFIGURATION_ENTRY_OFFSET := 80.0
 const BUTTON_ENTRY_OFFSET := 70.0
+const MAPS_DIRECTORY := "res://resources/world/maps"
+const BIOMES_DIRECTORY := "res://resources/world/biomes"
+const TIMES_DIRECTORY := "res://resources/world/time_of_day"
+const EnvironmentControllerScene := preload("res://src/world/environment/environment_controller.gd")
 
 enum MenuStage { SELECTING, TRANSITIONING, CONFIGURING }
 
 @onready var _grid_root: Control = %GridRoot
+@onready var _content_root: Control = get_node_or_null("ContentRoot") as Control
+@onready var _overlay: ColorRect = get_node_or_null("Overlay") as ColorRect
 @onready var _title_bar: Control = %TitleBar
 @onready var _details_panel: Panel = %DetailsPanel
 @onready var _details_content: HBoxContainer = %DetailsContent
@@ -40,9 +45,24 @@ enum MenuStage { SELECTING, TRANSITIONING, CONFIGURING }
 @onready var _burst_title: Label = %BurstTitle
 @onready var _burst_description: RichTextLabel = %BurstDescription
 @onready var _configuration_panel: Panel = %ConfigurationPanel
+@onready var _configuration_background: ColorRect = get_node_or_null("ConfigurationPanel/ConfigurationBackground") as ColorRect
+@onready var _configuration_border: ColorRect = get_node_or_null("ConfigurationPanel/ConfigurationBorder") as ColorRect
+@onready var _configuration_content: HBoxContainer = get_node_or_null("ConfigurationPanel/ConfigurationContent") as HBoxContainer
+@onready var _setup_column: VBoxContainer = get_node_or_null("ConfigurationPanel/ConfigurationContent/SetupColumn") as VBoxContainer
+@onready var _mission_columns: HBoxContainer = get_node_or_null("ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns") as HBoxContainer
+@onready var _map_section: VBoxContainer = get_node_or_null("ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/MapSection") as VBoxContainer
+@onready var _time_section: VBoxContainer = get_node_or_null("ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/TimeOfDaySection") as VBoxContainer
+@onready var _map_row: HBoxContainer = get_node_or_null("ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/MapSection/MapRow") as HBoxContainer
+@onready var _time_row: HBoxContainer = get_node_or_null("ConfigurationPanel/ConfigurationContent/SetupColumn/MissionColumns/TimeOfDaySection/TimeOfDayRow") as HBoxContainer
 @onready var _buttons_bar: HBoxContainer = %ButtonsBar
 @onready var _confirm_button: Button = %ConfirmButton
 @onready var _back_button: Button = %BackButton
+@onready var _map_preview_texture: TextureRect = %MapPreviewTexture
+@onready var _map_preview_viewport: SubViewport = %MapPreviewViewport
+@onready var _map_details: RichTextLabel = %MapDetails
+@onready var _map_options: MenuButton = %MapOptions
+@onready var _time_options: MenuButton = %TimeOfDayOptions
+@onready var _modifiers_toggle: CheckBox = %ModifiersOptions
 
 var _roster: CharacterRoster = null
 var _entries: Array = []
@@ -55,7 +75,7 @@ var _animation_time: float = 0.0
 var _top_row_count: int = 0
 var _bottom_row_count: int = 0
 var _bottom_row_columns: int = 1
-var _stage: int = MenuStage.SELECTING
+var _stage: MenuStage = MenuStage.SELECTING as MenuStage
 var _transition_tween: Tween = null
 var _title_bar_base_position: Vector2
 var _grid_base_position: Vector2
@@ -68,15 +88,66 @@ var _grid_hidden_position_y: float
 var _details_raised_position_y: float
 var _configuration_hidden_position_y: float
 var _rng := RandomNumberGenerator.new()
+var _map_definitions: Array[MapDefinition] = []
+var _biome_lookup: Dictionary = {}
+var _time_lookup: Dictionary = {}
+var _available_time_ids: Array[StringName] = []
+var _selected_map_index: int = -1
+var _mission_config: Dictionary = {
+	"map_id": StringName(""),
+	"biome_id": StringName(""),
+	"time_of_day_id": StringName(""),
+	"environment_seed": 0,
+	"random_events": false
+}
+var _mission_config_initialized: bool = false
+var _map_preview_environment: EnvironmentController = null
+var _map_popup: PopupMenu = null
+var _time_popup: PopupMenu = null
+var _content_root_default_mouse_filter: Control.MouseFilter = Control.MOUSE_FILTER_STOP as Control.MouseFilter
+
+func _mouse_filter(value: int) -> Control.MouseFilter:
+	return value as Control.MouseFilter
+
+func _set_mouse_filter(control: Control, filter: Control.MouseFilter, _label: String) -> void:
+	if control == null:
+		return
+	if control.mouse_filter == filter:
+		return
+	control.mouse_filter = filter
 
 func _ready() -> void:
 	_rng.randomize()
+	mouse_filter = _mouse_filter(Control.MOUSE_FILTER_PASS)
+	if _overlay:
+		_overlay.mouse_filter = _mouse_filter(Control.MOUSE_FILTER_IGNORE)
+		_overlay.z_index = -10
+		if _overlay.has_method("set_pickable"):
+			_overlay.set_pickable(false)
+	if _content_root:
+		_content_root_default_mouse_filter = _content_root.mouse_filter
+	_set_mouse_filter(_configuration_panel, _mouse_filter(Control.MOUSE_FILTER_PASS), "ConfigurationPanel")
+	_set_mouse_filter(_configuration_background, _mouse_filter(Control.MOUSE_FILTER_IGNORE), "ConfigurationBackground")
+	_set_mouse_filter(_configuration_border, _mouse_filter(Control.MOUSE_FILTER_IGNORE), "ConfigurationBorder")
+	_set_mouse_filter(_configuration_content, _mouse_filter(Control.MOUSE_FILTER_PASS), "ConfigurationContent")
+	_set_mouse_filter(_setup_column, _mouse_filter(Control.MOUSE_FILTER_PASS), "SetupColumn")
+	_set_mouse_filter(_mission_columns, _mouse_filter(Control.MOUSE_FILTER_PASS), "MissionColumns")
+	_set_mouse_filter(_map_section, _mouse_filter(Control.MOUSE_FILTER_PASS), "MapSection")
+	_set_mouse_filter(_time_section, _mouse_filter(Control.MOUSE_FILTER_PASS), "TimeOfDaySection")
+	_set_mouse_filter(_map_row, _mouse_filter(Control.MOUSE_FILTER_PASS), "MapRow")
+	_set_mouse_filter(_time_row, _mouse_filter(Control.MOUSE_FILTER_PASS), "TimeOfDayRow")
 	_back_button.pressed.connect(_on_back_pressed)
 	_confirm_button.pressed.connect(_on_confirm_pressed)
+	_map_popup = _map_options.get_popup() if _map_options else null
+	_time_popup = _time_options.get_popup() if _time_options else null
+	_configure_menu_popup(_map_options, _map_popup, Callable(self, "_on_map_menu_id_pressed"))
+	_configure_menu_popup(_time_options, _time_popup, Callable(self, "_on_time_menu_id_pressed"))
+	_modifiers_toggle.toggled.connect(_on_modifiers_toggled)
 	_build_stat_rows()
 	_update_buttons()
 	if _roster:
 		_populate_cards()
+	_initialize_mission_configuration()
 	_title_bar_base_position = _title_bar.position
 	_grid_base_position = _grid_root.position
 	_buttons_base_position = _buttons_bar.position
@@ -123,8 +194,7 @@ func _populate_cards() -> void:
 	for character in characters:
 		if character == null:
 			continue
-		var card_instance := CharacterCardScene.instantiate()
-		var card := card_instance as CharacterCardScript
+		var card: CharacterCard = CharacterCardScene.instantiate() as CharacterCard
 		if card == null:
 			continue
 		_grid_root.add_child(card)
@@ -138,8 +208,7 @@ func _populate_cards() -> void:
 		})
 
 	# Random selection card
-	var random_instance := CharacterCardScene.instantiate()
-	var random_card := random_instance as CharacterCardScript
+	var random_card: CharacterCard = CharacterCardScene.instantiate() as CharacterCard
 	if random_card:
 		_grid_root.add_child(random_card)
 		random_card.configure("RANDOM", null, true, null)
@@ -197,6 +266,537 @@ func _build_stat_rows() -> void:
 			"max": stat_def["max"]
 		}
 
+func _initialize_mission_configuration() -> void:
+	_map_definitions = _load_map_definitions()
+	_biome_lookup = _load_biome_definitions()
+	_time_lookup = _load_time_definitions()
+	_setup_map_preview_environment()
+	_populate_map_options()
+	var random_events_enabled := bool(_mission_config.get("random_events", false))
+	if _modifiers_toggle:
+		_modifiers_toggle.button_pressed = random_events_enabled
+	_mission_config_initialized = true
+	_apply_mission_config_overrides()
+
+func set_mission_config(config: Dictionary) -> void:
+	if typeof(config) != TYPE_DICTIONARY or config.is_empty():
+		return
+	var merged: Dictionary = _mission_config.duplicate(true)
+	if config.has("map_id"):
+		merged["map_id"] = _to_string_name(config["map_id"])
+	if config.has("biome_id"):
+		merged["biome_id"] = _to_string_name(config["biome_id"])
+	if config.has("time_of_day_id"):
+		merged["time_of_day_id"] = _to_string_name(config["time_of_day_id"])
+	if config.has("environment_seed"):
+		merged["environment_seed"] = int(config["environment_seed"])
+	if config.has("random_events"):
+		merged["random_events"] = bool(config["random_events"])
+	_mission_config = merged
+	if _mission_config_initialized:
+		_apply_mission_config_overrides()
+
+func _load_map_definitions() -> Array[MapDefinition]:
+	var results: Array[MapDefinition] = []
+	var dir := DirAccess.open(MAPS_DIRECTORY)
+	if dir:
+		dir.list_dir_begin()
+		var file_name := dir.get_next()
+		while file_name != "":
+			if dir.current_is_dir():
+				file_name = dir.get_next()
+				continue
+			if not file_name.ends_with(".tres"):
+				file_name = dir.get_next()
+				continue
+			var resource_path := String("%s/%s" % [MAPS_DIRECTORY, file_name])
+			var resource := ResourceLoader.load(resource_path)
+			var map_def := resource as MapDefinition
+			if map_def:
+				results.append(map_def)
+			file_name = dir.get_next()
+		dir.list_dir_end()
+	results.sort_custom(Callable(self, "_sort_map_definitions"))
+	return results
+
+func _load_biome_definitions() -> Dictionary:
+	var lookup: Dictionary = {}
+	var dir := DirAccess.open(BIOMES_DIRECTORY)
+	if dir:
+		dir.list_dir_begin()
+		var file_name := dir.get_next()
+		while file_name != "":
+			if dir.current_is_dir() or not file_name.ends_with(".tres"):
+				file_name = dir.get_next()
+				continue
+			var resource_path := String("%s/%s" % [BIOMES_DIRECTORY, file_name])
+			var resource := ResourceLoader.load(resource_path)
+			var biome := resource as BiomeDefinition
+			if biome:
+				var key := biome.biome_id if biome.biome_id != StringName("") else StringName(biome.display_name.to_lower())
+				lookup[key] = biome
+			file_name = dir.get_next()
+		dir.list_dir_end()
+	return lookup
+
+func _load_time_definitions() -> Dictionary:
+	var lookup: Dictionary = {}
+	var dir := DirAccess.open(TIMES_DIRECTORY)
+	if dir:
+		dir.list_dir_begin()
+		var file_name := dir.get_next()
+		while file_name != "":
+			if dir.current_is_dir() or not file_name.ends_with(".tres"):
+				file_name = dir.get_next()
+				continue
+			var resource_path := String("%s/%s" % [TIMES_DIRECTORY, file_name])
+			var resource := ResourceLoader.load(resource_path)
+			var time_def := resource as TimeOfDayDefinition
+			if time_def:
+				var key := time_def.time_id if time_def.time_id != StringName("") else StringName(time_def.display_name.to_lower())
+				lookup[key] = time_def
+			file_name = dir.get_next()
+		dir.list_dir_end()
+	return lookup
+
+func _setup_map_preview_environment() -> void:
+	if not _map_preview_viewport or _map_preview_environment:
+		return
+	if EnvironmentControllerScene == null:
+		return
+	_map_preview_environment = EnvironmentControllerScene.new()
+	_map_preview_environment.name = "EnvironmentPreview"
+	_map_preview_environment.auto_initialize = false
+	_map_preview_environment.use_fixed_seed = true
+	_map_preview_environment.ground_extent = 960.0
+	_map_preview_environment.set_physics_process(false)
+	_map_preview_environment.set_process(true)
+	_map_preview_viewport.add_child(_map_preview_environment)
+	if _map_preview_texture:
+		_map_preview_texture.texture = _map_preview_viewport.get_texture()
+	_refresh_map_preview_environment(null)
+
+func _configure_menu_popup(button: MenuButton, popup: PopupMenu, handler: Callable) -> void:
+	if button == null or popup == null:
+		return
+	button.focus_mode = Control.FOCUS_ALL
+	button.mouse_filter = _mouse_filter(Control.MOUSE_FILTER_STOP)
+	_apply_menu_button_style(button)
+	var pressed_callable := Callable(self, "_on_menu_button_pressed").bind(button, popup)
+	if button.pressed.is_connected(pressed_callable):
+		button.pressed.disconnect(pressed_callable)
+	button.pressed.connect(pressed_callable)
+	button.gui_input.connect(func(event: InputEvent) -> void:
+		var mouse_event := event as InputEventMouseButton
+		if mouse_event and mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
+			button.grab_focus()
+			button.show_popup()
+			button.accept_event()
+			return
+		var key_event := event as InputEventKey
+		if key_event and key_event.pressed and not key_event.echo and (key_event.keycode == KEY_ENTER or key_event.keycode == KEY_SPACE):
+			button.grab_focus()
+			button.show_popup()
+			button.accept_event()
+	)
+	if popup.id_pressed.is_connected(handler):
+		popup.id_pressed.disconnect(handler)
+	popup.id_pressed.connect(handler)
+	popup.hide_on_checkable_item_selection = true
+
+func _on_map_menu_id_pressed(id: int) -> void:
+	_on_map_option_selected(id)
+
+func _on_time_menu_id_pressed(id: int) -> void:
+	_on_time_option_selected(id)
+
+func _apply_menu_button_style(button: MenuButton) -> void:
+	button.flat = false
+	button.clip_text = true
+	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.icon_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	button.expand_icon = false
+	button.custom_minimum_size = Vector2(240, 48)
+	var normal := _create_menu_button_style(Color(0.12, 0.13, 0.19, 0.96), Color(0.42, 0.49, 0.74, 0.92))
+	var hover := _create_menu_button_style(Color(0.16, 0.18, 0.26, 0.98), Color(0.52, 0.6, 0.86, 0.96))
+	var pressed := _create_menu_button_style(Color(0.18, 0.2, 0.3, 1.0), Color(0.58, 0.64, 0.89, 1.0))
+	var disabled := _create_menu_button_style(Color(0.1, 0.1, 0.14, 0.6), Color(0.25, 0.25, 0.34, 0.6))
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_stylebox_override("hover", hover)
+	button.add_theme_stylebox_override("pressed", pressed)
+	button.add_theme_stylebox_override("focus", hover)
+	button.add_theme_stylebox_override("disabled", disabled)
+	button.add_theme_stylebox_override("hover_pressed", pressed)
+	var arrow_icon := _resolve_dropdown_icon(button)
+	if arrow_icon:
+		button.icon = arrow_icon
+		button.add_theme_color_override("icon_color", Color(0.85, 0.9, 1.0, 0.95))
+
+func _create_menu_button_style(bg: Color, border: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = bg
+	style.border_color = border
+	style.set_border_width_all(2)
+	style.corner_radius_top_left = 10
+	style.corner_radius_top_right = 10
+	style.corner_radius_bottom_right = 10
+	style.corner_radius_bottom_left = 10
+	style.expand_margin_left = 6
+	style.expand_margin_right = 6
+	style.expand_margin_top = 4
+	style.expand_margin_bottom = 4
+	return style
+
+func _resolve_dropdown_icon(button: MenuButton) -> Texture2D:
+	var theme_pairs := [
+		{"name": "arrow", "type": "OptionButton"},
+		{"name": "arrow_down", "type": "OptionButton"},
+		{"name": "gui_dropdown", "type": "MenuButton"},
+		{"name": "arrow_down", "type": "Tree"},
+		{"name": "arrow_down", "type": "Button"}
+	]
+	for pair in theme_pairs:
+		var icon_name: StringName = StringName(pair["name"])
+		var theme_type: StringName = StringName(pair["type"])
+		if button.has_theme_icon(icon_name, theme_type):
+			return button.get_theme_icon(icon_name, theme_type)
+	return null
+
+func _on_menu_button_pressed(button: MenuButton, popup: PopupMenu) -> void:
+	if button == null or popup == null:
+		return
+	if popup.get_item_count() == 0:
+		return
+	popup.reset_size()
+	var global_rect := button.get_global_rect()
+	var popup_position := Vector2i(int(round(global_rect.position.x)), int(round(global_rect.position.y + global_rect.size.y)))
+	var popup_size := Vector2i(int(round(max(global_rect.size.x, 1.0))), 0)
+	popup.popup(Rect2i(popup_position, popup_size))
+
+func _set_menu_button_selection(button: MenuButton, popup: PopupMenu, id: int) -> void:
+	if button == null or popup == null:
+		return
+	var item_index := popup.get_item_index(id)
+	if item_index == -1:
+		return
+	for i in range(popup.get_item_count()):
+		popup.set_item_checked(i, i == item_index)
+	var selection_text := popup.get_item_text(item_index)
+	if button.icon == null and not selection_text.ends_with(" ▼"):
+		selection_text = "%s ▼" % selection_text
+	button.text = selection_text
+
+func _clear_menu_button(button: MenuButton, popup: PopupMenu, placeholder: String) -> void:
+	if popup:
+		popup.clear()
+	if button:
+		var resolved_text := placeholder
+		if button.icon == null and not resolved_text.ends_with(" ▼"):
+			resolved_text = "%s ▼" % resolved_text
+		button.text = resolved_text
+		button.disabled = true
+
+func _refresh_map_preview_environment(map_def: MapDefinition) -> void:
+	if not _map_preview_environment:
+		return
+	var biome_defs: Array[BiomeDefinition] = []
+	for value in _biome_lookup.values():
+		if value is BiomeDefinition:
+			biome_defs.append(value)
+	var time_defs: Array[TimeOfDayDefinition] = []
+	for value in _time_lookup.values():
+		if value is TimeOfDayDefinition:
+			time_defs.append(value)
+	_map_preview_environment.biome_definitions = biome_defs
+	_map_preview_environment.time_of_day_definitions = time_defs
+	var target_biome: StringName = StringName("")
+	var target_time: StringName = StringName("")
+	var seed_value: int = _rng.randi()
+	if map_def:
+		target_biome = map_def.biome_id
+		target_time = map_def.time_of_day_id
+		seed_value = _compute_preview_seed(map_def)
+	var configured_biome: StringName = _mission_config.get("biome_id", StringName(""))
+	if configured_biome != StringName(""):
+		target_biome = configured_biome
+	var configured_time: StringName = _mission_config.get("time_of_day_id", StringName(""))
+	if configured_time != StringName(""):
+		target_time = configured_time
+	var configured_seed: int = int(_mission_config.get("environment_seed", 0))
+	if configured_seed > 0:
+		seed_value = configured_seed
+	if target_biome == StringName("") and not biome_defs.is_empty():
+		target_biome = biome_defs[0].biome_id
+	var available_times: Array[StringName] = []
+	if map_def:
+		available_times = map_def.get_available_time_ids()
+	if target_time == StringName("") and not available_times.is_empty():
+		target_time = available_times[0]
+	if target_time == StringName("") and not time_defs.is_empty():
+		target_time = time_defs[0].time_id
+	_map_preview_environment.environment_seed = seed_value
+	_map_preview_environment.initialize_environment(seed_value, target_biome, target_time)
+
+func _compute_preview_seed(map_def: MapDefinition) -> int:
+	if map_def == null:
+		return _rng.randi()
+	var seed_value := int(map_def.environment_seed)
+	if seed_value != 0:
+		return seed_value
+	var hash_source := String(map_def.map_id)
+	if hash_source.is_empty():
+		hash_source = map_def.display_name
+	if hash_source.is_empty():
+		hash_source = "map"
+	var hashed := hash(hash_source)
+	if hashed < 0:
+		hashed = -hashed
+	return int((hashed % 2000000000) + 1)
+
+func _populate_map_options() -> void:
+	if not _map_options:
+		return
+	if _map_popup:
+		_map_popup.clear()
+	if _map_definitions.is_empty():
+		if _map_preview_texture:
+			_map_preview_texture.texture = null
+		_refresh_map_preview_environment(null)
+		if _map_details:
+			_map_details.text = "[center][color=#FF8080]No mission maps are configured.[/color][/center]"
+		_available_time_ids.clear()
+		_selected_map_index = -1
+		_mission_config["map_id"] = StringName("")
+		_mission_config["biome_id"] = StringName("")
+		_mission_config["time_of_day_id"] = StringName("")
+		_clear_menu_button(_map_options, _map_popup, "No Mission Maps")
+		_clear_menu_button(_time_options, _time_popup, "No Times Available")
+		return
+	_map_options.disabled = false
+	var _added_map_count := 0
+	for i in range(_map_definitions.size()):
+		var map_def := _map_definitions[i]
+		var label := map_def.display_name
+		if map_def.difficulty_label != "":
+			label = "%s (%s)" % [map_def.display_name, map_def.difficulty_label]
+		if _map_popup:
+			_map_popup.add_item(label, i)
+			var popup_index := _map_popup.get_item_index(i)
+			if popup_index >= 0:
+				_map_popup.set_item_as_radio_checkable(popup_index, true)
+		_added_map_count += 1
+	var initial_index := clampi(_selected_map_index, 0, _map_definitions.size() - 1)
+	var remembered_id: StringName = _mission_config.get("map_id", StringName(""))
+	if remembered_id != StringName(""):
+		for i in range(_map_definitions.size()):
+			if _map_definitions[i].map_id == remembered_id:
+				initial_index = i
+				break
+	_apply_selected_map(initial_index)
+
+func _apply_selected_map(index: int) -> void:
+	if index < 0 or index >= _map_definitions.size():
+		return
+	_selected_map_index = index
+	if _map_popup and _map_options:
+		_set_menu_button_selection(_map_options, _map_popup, index)
+	var map_def := _map_definitions[index]
+	if _map_preview_environment and _map_preview_texture:
+		_refresh_map_preview_environment(map_def)
+		_map_preview_texture.texture = _map_preview_viewport.get_texture()
+	elif _map_preview_texture:
+		_map_preview_texture.texture = map_def.preview_texture
+	_mission_config["map_id"] = map_def.map_id
+	_mission_config["biome_id"] = map_def.biome_id
+	_mission_config["environment_seed"] = map_def.environment_seed
+	_populate_time_options(map_def)
+	_refresh_map_details_text()
+
+func _apply_mission_config_overrides() -> void:
+	if _map_definitions.is_empty():
+		return
+	var prior_config: Dictionary = _mission_config.duplicate(true)
+	var remembered_map_id: StringName = prior_config.get("map_id", StringName(""))
+	var target_index := clampi(_selected_map_index if _selected_map_index >= 0 else 0, 0, _map_definitions.size() - 1)
+	if remembered_map_id != StringName(""):
+		for i in range(_map_definitions.size()):
+			if _map_definitions[i].map_id == remembered_map_id:
+				target_index = i
+				break
+	_selected_map_index = target_index
+	_apply_selected_map(_selected_map_index)
+	var explicit_biome: StringName = prior_config.get("biome_id", StringName(""))
+	if explicit_biome != StringName(""):
+		_mission_config["biome_id"] = explicit_biome
+	var explicit_seed: int = int(prior_config.get("environment_seed", _mission_config.get("environment_seed", 0)))
+	_mission_config["environment_seed"] = explicit_seed
+	var explicit_time: StringName = prior_config.get("time_of_day_id", StringName(""))
+	if explicit_time != StringName(""):
+		for i in range(_available_time_ids.size()):
+			if _available_time_ids[i] == explicit_time:
+				_on_time_option_selected(i)
+				break
+	if _modifiers_toggle:
+		_modifiers_toggle.button_pressed = bool(prior_config.get("random_events", false))
+	_mission_config["random_events"] = bool(prior_config.get("random_events", false))
+	_refresh_map_details_text()
+	if _map_preview_environment and _selected_map_index >= 0 and _selected_map_index < _map_definitions.size():
+		_refresh_map_preview_environment(_map_definitions[_selected_map_index])
+
+func _populate_time_options(map_def: MapDefinition) -> void:
+	if not _time_options:
+		return
+	if _time_popup:
+		_time_popup.clear()
+	_available_time_ids.clear()
+	var candidate_ids: Array = []
+	if map_def:
+		candidate_ids = map_def.get_available_time_ids()
+	if candidate_ids.is_empty():
+		candidate_ids = _time_lookup.keys()
+	var default_time_id: StringName = map_def.time_of_day_id if map_def else StringName("")
+	var seen_ids: Dictionary = {}
+	var time_entries: Array = []
+	for raw_id in candidate_ids:
+		var time_id := _to_string_name(raw_id)
+		if time_id == StringName(""):
+			continue
+		if seen_ids.has(time_id):
+			continue
+		seen_ids[time_id] = true
+		var time_def: TimeOfDayDefinition = _time_lookup.get(time_id, null)
+		var display := time_def.display_name if time_def else String(time_id)
+		time_entries.append({
+			"id": time_id,
+			"display": display
+		})
+	if time_entries.is_empty():
+		_mission_config["time_of_day_id"] = StringName("")
+		_clear_menu_button(_time_options, _time_popup, "No Times Available")
+		return
+	time_entries.sort_custom(Callable(self, "_sort_time_entries"))
+	for entry in time_entries:
+		var entry_id: StringName = _to_string_name(entry.get("id", StringName("")))
+		var display_text := String(entry.get("display", ""))
+		var new_id := _available_time_ids.size()
+		if _time_popup:
+			_time_popup.add_item(display_text, new_id)
+			var popup_index := _time_popup.get_item_index(new_id)
+			if popup_index >= 0:
+				_time_popup.set_item_as_radio_checkable(popup_index, true)
+		_available_time_ids.append(entry_id)
+	_time_options.disabled = false
+	var select_index := 0
+	var remembered_time: StringName = _mission_config.get("time_of_day_id", StringName(""))
+	if remembered_time != StringName(""):
+		for i in range(_available_time_ids.size()):
+			if _available_time_ids[i] == remembered_time:
+				select_index = i
+				break
+	elif default_time_id != StringName(""):
+		for i in range(_available_time_ids.size()):
+			if _available_time_ids[i] == default_time_id:
+				select_index = i
+				break
+	_on_time_option_selected(select_index)
+
+func _refresh_map_details_text() -> void:
+	if not _map_details:
+		return
+	if _selected_map_index < 0 or _selected_map_index >= _map_definitions.size():
+		_map_details.text = "[center][color=#8FA3FF]Select a mission map to view terrain information.[/color][/center]"
+		return
+	var map_def := _map_definitions[_selected_map_index]
+	var biome_label := _get_biome_display_name(map_def.biome_id)
+	var time_id: StringName = _mission_config.get("time_of_day_id", StringName(""))
+	var time_label := _get_time_display_name(time_id)
+	var lines: Array[String] = []
+	lines.append("[center][b]%s[/b][/center]" % map_def.display_name)
+	if map_def.difficulty_label != "":
+		lines.append("[center][color=#FFB347]%s[/color][/center]" % map_def.difficulty_label)
+	if map_def.description != "":
+		lines.append("[color=#C8D4FF]%s[/color]" % map_def.description)
+	var detail_segments: Array[String] = []
+	detail_segments.append("[color=#8FA3FF]Biome:[/color] %s" % biome_label)
+	if time_label != "":
+		detail_segments.append("[color=#8FA3FF]Time of Day:[/color] %s" % time_label)
+	var available_time_labels: Array[String] = []
+	var listed_ids: Array[StringName] = []
+	for time_id_option in map_def.get_available_time_ids():
+		if time_id_option == StringName(""):
+			continue
+		if listed_ids.has(time_id_option):
+			continue
+		listed_ids.append(time_id_option)
+		var option_label := _get_time_display_name(time_id_option)
+		if option_label != "":
+			available_time_labels.append(option_label)
+	if available_time_labels.size() > 1:
+		detail_segments.append("[color=#8FA3FF]Available Times:[/color] %s" % ", ".join(available_time_labels))
+	var seed_value: int = int(_mission_config.get("environment_seed", map_def.environment_seed))
+	if seed_value > 0:
+		detail_segments.append("[color=#8FA3FF]Seed:[/color] %d" % seed_value)
+	if not detail_segments.is_empty():
+		lines.append("\n".join(detail_segments))
+	_map_details.text = "\n".join(lines)
+
+func _get_biome_display_name(biome_id: StringName) -> String:
+	if biome_id == StringName(""):
+		return "Random"
+	var biome: BiomeDefinition = _biome_lookup.get(biome_id, null)
+	if biome and biome is BiomeDefinition:
+		return biome.display_name
+	return String(biome_id)
+
+func _get_time_display_name(time_id: StringName) -> String:
+	if time_id == StringName(""):
+		return "Random"
+	var time_def: TimeOfDayDefinition = _time_lookup.get(time_id, null)
+	if time_def and time_def is TimeOfDayDefinition:
+		return time_def.display_name
+	return String(time_id)
+
+func _sort_map_definitions(a: MapDefinition, b: MapDefinition) -> bool:
+	if a == null and b == null:
+		return false
+	if a == null:
+		return false
+	if b == null:
+		return true
+	return String(a.display_name).to_lower() < String(b.display_name).to_lower()
+
+func _sort_time_entries(a: Dictionary, b: Dictionary) -> bool:
+	if a.is_empty() and b.is_empty():
+		return false
+	if a.is_empty():
+		return false
+	if b.is_empty():
+		return true
+	var a_display := String(a.get("display", "")).to_lower()
+	var b_display := String(b.get("display", "")).to_lower()
+	if a_display == b_display:
+		return String(a.get("id", "")).to_lower() < String(b.get("id", "")).to_lower()
+	return a_display < b_display
+
+func _on_map_option_selected(index: int) -> void:
+	_apply_selected_map(index)
+
+func _on_time_option_selected(index: int) -> void:
+	if index < 0 or index >= _available_time_ids.size():
+		return
+	if _time_popup and _time_options:
+		_set_menu_button_selection(_time_options, _time_popup, index)
+	_mission_config["time_of_day_id"] = _available_time_ids[index]
+	_refresh_map_details_text()
+	if _map_preview_environment and _selected_map_index >= 0 and _selected_map_index < _map_definitions.size():
+		_refresh_map_preview_environment(_map_definitions[_selected_map_index])
+
+func _on_modifiers_toggled(enabled: bool) -> void:
+	_mission_config["random_events"] = enabled
+	if _modifiers_toggle and _modifiers_toggle.button_pressed != enabled:
+		_modifiers_toggle.button_pressed = enabled
+
 func _layout_cards() -> void:
 	if _entries.is_empty():
 		return
@@ -245,7 +845,7 @@ func _layout_cards() -> void:
 	var top_y: float = clampf(grid_size.y * 0.08, 52.0, grid_size.y * 0.22)
 	for i in range(_top_row_count):
 		var entry: Dictionary = _entries[i]
-		var card := entry.get("card") as CharacterCardScript
+		var card: CharacterCard = entry.get("card") as CharacterCard
 		if card == null:
 			continue
 		card.anchor_left = 0.0
@@ -270,7 +870,7 @@ func _layout_cards() -> void:
 			if entry_index >= _entries.size():
 				break
 			var entry: Dictionary = _entries[entry_index]
-			var card := entry.get("card") as CharacterCardScript
+			var card: CharacterCard = entry.get("card") as CharacterCard
 			if card == null:
 				continue
 			var row_index := int(floor(float(i) / float(_bottom_row_columns)))
@@ -293,7 +893,7 @@ func _select_index(index: int) -> void:
 		return
 	_selected_index = wrapi(index, 0, _entries.size())
 	for i in range(_entries.size()):
-		var card := _entries[i].get("card") as CharacterCardScript
+		var card: CharacterCard = _entries[i].get("card") as CharacterCard
 		if card:
 			card.set_selected(i == _selected_index)
 	var entry: Dictionary = _entries[_selected_index]
@@ -479,7 +1079,7 @@ func _process(delta: float) -> void:
 	_character_sprite.texture = _current_frames[frame_index]
 
 func _on_card_pressed(card_node) -> void:
-	var card := card_node as CharacterCardScript
+	var card: CharacterCard = card_node as CharacterCard
 	if card == null:
 		return
 	var index := _index_for_card(card)
@@ -493,7 +1093,7 @@ func _on_card_pressed(card_node) -> void:
 		_enter_configuration_mode()
 
 func _on_card_hovered(card_node) -> void:
-	var card := card_node as CharacterCardScript
+	var card: CharacterCard = card_node as CharacterCard
 	if card == null:
 		return
 	if _stage != MenuStage.SELECTING:
@@ -516,7 +1116,7 @@ func _enter_configuration_mode() -> void:
 	var entry: Dictionary = _entries[_selected_index]
 	if entry.get("type") != "character":
 		return
-	_stage = MenuStage.TRANSITIONING
+	_stage = MenuStage.TRANSITIONING as MenuStage
 	if _transition_tween and _transition_tween.is_running():
 		_transition_tween.kill()
 	_title_bar.position = _title_bar_base_position
@@ -532,7 +1132,9 @@ func _enter_configuration_mode() -> void:
 	_refresh_button_positions(false)
 	_buttons_bar.position = Vector2(_buttons_base_position.x, _buttons_entry_position_y)
 	_details_panel.position = Vector2(_details_base_position.x, _details_base_position.y + DETAILS_ENTRY_OFFSET)
-	_grid_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_grid_root.mouse_filter = _mouse_filter(Control.MOUSE_FILTER_IGNORE)
+	if _content_root:
+		_set_mouse_filter(_content_root, _mouse_filter(Control.MOUSE_FILTER_IGNORE), "ContentRoot")
 	var duration := 0.6
 	var title_target_y := _title_bar_base_position.y - (_title_bar.size.y + 60.0)
 	var grid_height: float = max(_grid_root.size.y, 300.0)
@@ -557,7 +1159,9 @@ func _enter_configuration_mode() -> void:
 func _on_configuration_transition_finished() -> void:
 	_transition_tween = null
 	_grid_root.visible = false
-	_stage = MenuStage.CONFIGURING
+	_stage = MenuStage.CONFIGURING as MenuStage
+	if _map_options:
+		_map_options.grab_focus()
 	_update_buttons()
 
 func _on_confirm_pressed() -> void:
@@ -579,7 +1183,14 @@ func _on_confirm_pressed() -> void:
 	else:
 		chosen = entry.get("character")
 	if chosen:
-		emit_signal("character_confirmed", chosen)
+		var payload := {
+			"map_id": _mission_config.get("map_id", StringName("")),
+			"biome_id": _mission_config.get("biome_id", StringName("")),
+			"time_of_day_id": _mission_config.get("time_of_day_id", StringName("")),
+			"environment_seed": int(_mission_config.get("environment_seed", 0)),
+			"random_events": bool(_mission_config.get("random_events", false))
+		}
+		emit_signal("character_confirmed", chosen, payload)
 
 func _on_back_pressed() -> void:
 	_emit_back_requested()
@@ -640,11 +1251,11 @@ func _exit_configuration_mode() -> void:
 	if _transition_tween and _transition_tween.is_running():
 		_transition_tween.kill()
 		_transition_tween = null
-	_stage = MenuStage.TRANSITIONING
+	_stage = MenuStage.TRANSITIONING as MenuStage
 	_grid_root.visible = true
 	_grid_root.modulate = Color(1, 1, 1, 0)
 	_grid_root.position = Vector2(_grid_base_position.x, _grid_hidden_position_y)
-	_grid_root.mouse_filter = Control.MOUSE_FILTER_PASS
+	_grid_root.mouse_filter = _mouse_filter(Control.MOUSE_FILTER_PASS)
 	_details_panel.position = Vector2(_details_base_position.x, _details_raised_position_y)
 	_configuration_hidden_position_y = _compute_configuration_hidden_y()
 	var duration := 0.6
@@ -671,9 +1282,11 @@ func _on_exit_transition_finished() -> void:
 	_grid_root.visible = true
 	_grid_root.position = _grid_base_position
 	_grid_root.modulate = Color(1, 1, 1, 1)
-	_grid_root.mouse_filter = Control.MOUSE_FILTER_PASS
+	_grid_root.mouse_filter = _mouse_filter(Control.MOUSE_FILTER_PASS)
 	_details_panel.position = _details_base_position
-	_stage = MenuStage.SELECTING
+	if _content_root:
+		_content_root.mouse_filter = _content_root_default_mouse_filter
+	_stage = MenuStage.SELECTING as MenuStage
 	_update_buttons()
 
 func _emit_back_requested() -> void:
@@ -683,3 +1296,8 @@ func _emit_back_requested() -> void:
 		return
 	else:
 		emit_signal("back_requested")
+
+func _to_string_name(value) -> StringName:
+	if value is StringName:
+		return value
+	return StringName(String(value))

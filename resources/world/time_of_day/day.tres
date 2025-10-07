@@ -1,0 +1,17 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource path="res://src/world/environment/time_of_day_definition.gd" type="Script" id=1]
+
+[resource]
+script = ExtResource(1)
+time_id = &"day"
+display_name = "Day"
+ambient_tint = Color(1, 1, 1, 1)
+ambient_intensity = 1.0
+sky_tint = Color(1, 1, 1, 1)
+fog_color = Color(1, 1, 1, 1)
+fog_alpha = 0.0
+light_color = Color(1, 0.972549, 0.894118, 1)
+light_energy = 1.0
+light_angle_degrees = -38.0
+vignette_strength = 0.0

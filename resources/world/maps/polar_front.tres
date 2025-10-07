@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+
+[ext_resource path="res://src/world/environment/map_definition.gd" type="Script" id=1]
+[ext_resource path="res://assets/images/Menu/BKG/eden.jpg" type="Texture2D" id=2]
+
+[resource]
+script = ExtResource(1)
+map_id = &"polar_front"
+display_name = "Polar Front"
+description = "Blizzard-swept outposts with limited cover. Low visibility rewards burst damage and rapid repositioning."
+preview_texture = ExtResource(2)
+biome_id = &"snowfield"
+time_of_day_id = &"night"
+environment_seed = 451882
+available_time_ids = [&"day", &"night"]
+difficulty_label = "Endurance"

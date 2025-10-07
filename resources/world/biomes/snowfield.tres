@@ -1,0 +1,38 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource path="res://src/world/environment/biome_definition.gd" type="Script" id=1]
+
+[resource]
+script = ExtResource(1)
+biome_id = &"snowfield"
+display_name = "Frosted Expanse"
+base_color = Color(0.74902, 0.807843, 0.862745, 1)
+secondary_color = Color(0.654902, 0.72549, 0.807843, 1)
+accent_color = Color(0.878431, 0.92549, 0.964706, 1)
+noise_scale = 8.5
+detail_strength = 0.4
+wave_strength = 0.32
+wave_speed = 0.5
+patchwork_strength = 0.55
+color_variation = 0.18
+sky_color = Color(1, 1, 1, 1)
+horizon_color = Color(1, 1, 1, 1)
+decoration_textures = []
+decoration_count = 0
+decoration_min_scale = 0.55
+decoration_max_scale = 1.6
+decoration_alpha = 0.82
+decoration_spawn_radius = 680.0
+decoration_variation = 0.48
+wind_strength = 1.15
+snow_cover = 1.0
+snow_brightness = 0.94
+snow_tint_color = Color(0.839216, 0.894118, 0.964706, 1)
+snow_tint_strength = 0.14
+snow_shadow_strength = 0.2
+snow_drift_scale = 0.55
+snow_crust_strength = 0.36
+snow_ice_highlight = 0.28
+snow_sparkle_intensity = 0.45
+snowfall_density = 0.9
+snowfall_scale = 1.4

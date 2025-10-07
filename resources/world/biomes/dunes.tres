@@ -1,0 +1,27 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource path="res://src/world/environment/biome_definition.gd" type="Script" id=1]
+
+[resource]
+script = ExtResource(1)
+biome_id = &"dunes"
+display_name = "Golden Dunes"
+base_color = Color(0.505882, 0.415686, 0.258824, 1)
+secondary_color = Color(0.380392, 0.298039, 0.196078, 1)
+accent_color = Color(0.67451, 0.568627, 0.294118, 1)
+noise_scale = 5.5
+detail_strength = 0.28
+wave_strength = 0.12
+wave_speed = 0.3
+patchwork_strength = 0.32
+color_variation = 0.22
+sky_color = Color(0.760784, 0.67451, 0.505882, 1)
+horizon_color = Color(0.760784, 0.67451, 0.505882, 1)
+decoration_textures = []
+decoration_count = 0
+decoration_min_scale = 0.65
+decoration_max_scale = 1.45
+decoration_alpha = 0.7
+decoration_spawn_radius = 720.0
+decoration_variation = 0.35
+wind_strength = 0.3

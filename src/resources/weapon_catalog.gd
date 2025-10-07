@@ -37,7 +37,7 @@ func weapon_exists(weapon_type: String) -> bool:
 	return _weapon_data.has(weapon_type)
 
 func get_weapon_property(weapon_type: String, category: String, property_name: String, default_value = null):
-	var config := get_weapon_config(weapon_type)
+	var config: Dictionary = get_weapon_config(weapon_type)
 	if config.is_empty():
 		return default_value
 	if category.is_empty():
@@ -48,7 +48,7 @@ func get_weapon_property(weapon_type: String, category: String, property_name: S
 	return default_value
 
 func get_category(weapon_type: String, category: String) -> Dictionary:
-	var config := get_weapon_config(weapon_type)
+	var config: Dictionary = get_weapon_config(weapon_type)
 	if config.is_empty():
 		return {}
 	var variant: Variant = config.get(category, {})
@@ -70,18 +70,18 @@ func get_reload_time(weapon_type: String, default_value: float = 2.0) -> float:
 	return float(get_weapon_property(weapon_type, "ammo", "reload_time", default_value))
 
 func get_fire_mode(weapon_type: String, default_value: String = "automatic") -> String:
-	var config := get_weapon_config(weapon_type)
+	var config: Dictionary = get_weapon_config(weapon_type)
 	return str(config.get("fire_mode", default_value)) if not config.is_empty() else default_value
 
 func get_bullet_properties(weapon_type: String) -> Dictionary:
-	var config := get_weapon_config(weapon_type)
+	var config: Dictionary = get_weapon_config(weapon_type)
 	if config.is_empty():
 		return {}
 	var bullet_variant: Variant = config.get("bullet_properties", {})
 	var bullet_dict: Dictionary = bullet_variant as Dictionary if bullet_variant is Dictionary else {}
 	if bullet_dict.is_empty():
 		return {}
-	var result := bullet_dict.duplicate(true)
+	var result: Dictionary = bullet_dict.duplicate(true)
 	if not result.has("range"):
 		result["range"] = get_range(weapon_type, 800.0)
 	return result

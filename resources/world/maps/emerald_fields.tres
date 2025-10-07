@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+
+[ext_resource path="res://src/world/environment/map_definition.gd" type="Script" id=1]
+[ext_resource path="res://assets/images/Menu/BKG/forest.jpg" type="Texture2D" id=2]
+
+[resource]
+script = ExtResource(1)
+map_id = &"emerald_fields"
+display_name = "Emerald Fields"
+description = "Sweeping grasslands dotted with supply crates and rolling cover. Ideal for mid-range engagements."
+preview_texture = ExtResource(2)
+biome_id = &"grasslands"
+time_of_day_id = &"day"
+environment_seed = 782314
+available_time_ids = [&"day", &"night"]
+difficulty_label = "Balanced"

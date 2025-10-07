@@ -267,6 +267,6 @@ func _find_mix_entry(type_name: String, mix: Array) -> Dictionary:
 
 func _format_survival_objective(total_seconds: float) -> String:
 	var seconds: int = int(total_seconds)
-	var minutes: int = seconds / 60
+	var minutes: int = int(seconds / 60.0)
 	var rem: int = seconds % 60
 	return "SURVIVE %02d:%02d" % [minutes, rem]

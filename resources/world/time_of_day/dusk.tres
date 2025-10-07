@@ -1,0 +1,4 @@
+[gd_resource type="Resource" load_steps=1 format=3]
+
+[resource]
+_comment = "Deprecated preset. Use day.tres or night.tres instead."

@@ -21,6 +21,7 @@ const MENU_OPTIONS := [
 
 @onready var _background: Control = $Background
 @onready var _button_row: Control = %ButtonRow
+@onready var _title_panel: Panel = %TitlePanel
 @onready var _title_label: Label = %TitleLabel
 @onready var _subtitle_label: Label = %SubtitleLabel
 @onready var _version_label: Label = %VersionLabel
@@ -111,7 +112,6 @@ func _activate_selection() -> void:
 			_show_placeholder_message("Leaderboards")
 		"ACHIEVEMENTS":
 			emit_signal("achievements_requested")
-			_show_placeholder_message("Achievements")
 		"SHOP":
 			emit_signal("shop_requested")
 			_show_placeholder_message("Shop")
@@ -156,6 +156,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func set_last_selected_character(_character) -> void:
 	pass
+
+func set_title_panel_visible(should_show: bool) -> void:
+	if _title_panel:
+		_title_panel.visible = should_show
 
 func _show_placeholder_message(feature_name: String) -> void:
 	if not _coming_soon_dialog:

@@ -17,11 +17,25 @@ const EnemyScene := preload("res://scenes/enemies/BasicEnemy.tscn")
 @export_range(0.1, 2.0, 0.05) var threat_pulse_period: float = 0.9
 @export_range(1.0, 1.5, 0.01) var threat_pulse_scale: float = 1.08
 @export_range(0, 3, 1) var threat_pulse_min_severity: int = 2
+@export var biome_override: StringName = &""
+@export var time_of_day_override: StringName = &""
+@export var randomize_environment_each_run: bool = true
+@export_range(0, 2147483647, 1) var environment_seed: int = 0
+
+const SNOW_PATH_STEP := 56.0
+const SNOW_PATH_RADIUS := 146.0
+const SNOW_FOOTPRINT_RADIUS := 58.0
+const SNOW_EDGE_OFFSET := 26.0
+const SNOW_KICKUP_INTERVAL := 0.14
+const SNOW_KICKUP_SPEED_THRESHOLD := 28.0
+const SNOW_KICKUP_MAX_SPEED := 420.0
+const SNOW_KICKUP_VERTICAL_OFFSET := 42.0
 
 @onready var _enemy_container: Node2D = $EnemyContainer
 @onready var _player_hud: PlayerHudCluster = $HUD/MarginContainer/VBoxContainer/PlayerHudCluster
 @onready var _objective_label: Label = %ObjectiveLabel
 @onready var _world_manager: WorldManager = %WorldManager
+@onready var _environment_controller: EnvironmentController = %Environment
 
 var _player: CharacterBody2D = null
 var _camera: Camera2D = null
@@ -39,14 +53,22 @@ var _objective_pulse_tween: Tween = null
 var _total_kills: int = 0
 var _current_wave_index: int = 0
 var _current_run_time: float = 0.0
+var _last_snow_path_position: Vector2 = Vector2.ZERO
+var _snow_kickup_timer: float = 0.0
+var _last_snow_move_direction: Vector2 = Vector2.DOWN
 
 func _ready() -> void:
 	_rng.randomize()
 	_achievement_service = _resolve_achievement_service()
+	_configure_environment()
 	_player = _spawn_player()
 	_camera = _create_camera()
 	_configure_player_hud()
 	_configure_world_manager()
+	if is_instance_valid(_player):
+		_last_snow_path_position = _player.global_position
+		if _environment_controller and _environment_controller.supports_snow_imprints():
+			_environment_controller.add_snow_path_sample(_player.global_position, SNOW_PATH_RADIUS, 0.6)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("pause"):
@@ -61,6 +83,8 @@ func _process(_delta: float) -> void:
 		if not spawn_requests.is_empty():
 			_pending_spawn_requests.append_array(spawn_requests)
 	_flush_spawn_queue()
+	_update_continuous_snow_kickup(_delta)
+	_update_snow_interactions()
 
 func _spawn_player() -> CharacterBody2D:
 	var player := PlayerScene.instantiate()
@@ -115,6 +139,78 @@ func _choose_spawn_position() -> Vector2:
 	var offset := Vector2.RIGHT.rotated(angle) * distance
 	return _player.global_position + offset
 
+func _update_snow_interactions() -> void:
+	if not _environment_controller or not _environment_controller.supports_snow_imprints():
+		_last_snow_path_position = Vector2.ZERO
+		return
+	if not is_instance_valid(_player):
+		return
+	var current_pos := _player.global_position
+	if _last_snow_path_position == Vector2.ZERO:
+		_last_snow_path_position = current_pos
+		_environment_controller.add_snow_path_sample(current_pos, SNOW_PATH_RADIUS, 0.6)
+		return
+	var displacement := current_pos - _last_snow_path_position
+	var distance := displacement.length()
+	if distance < SNOW_PATH_STEP:
+		return
+	var direction := displacement.normalized()
+	var step := SNOW_PATH_STEP
+	var iterations := int(distance / step)
+	for i in range(1, iterations + 1):
+		var sample := _last_snow_path_position + direction * step * float(i)
+		_environment_controller.add_snow_path_sample(sample, SNOW_PATH_RADIUS, 0.6)
+		var lateral := direction.rotated(-PI * 0.5) * SNOW_EDGE_OFFSET
+		_environment_controller.add_snow_footprint(sample + lateral, SNOW_FOOTPRINT_RADIUS, 0.55)
+		_environment_controller.add_snow_footprint(sample - lateral, SNOW_FOOTPRINT_RADIUS, 0.55)
+	_last_snow_path_position = _last_snow_path_position + direction * step * float(iterations)
+	if distance - float(iterations) * step >= SNOW_PATH_STEP * 0.5:
+		_environment_controller.add_snow_path_sample(current_pos, SNOW_PATH_RADIUS, 0.6)
+		var lateral := direction.rotated(-PI * 0.5) * SNOW_EDGE_OFFSET
+		_environment_controller.add_snow_footprint(current_pos + lateral, SNOW_FOOTPRINT_RADIUS, 0.5)
+		_environment_controller.add_snow_footprint(current_pos - lateral, SNOW_FOOTPRINT_RADIUS, 0.5)
+	_last_snow_path_position = current_pos
+
+func _update_continuous_snow_kickup(delta: float) -> void:
+	if not _environment_controller or not _environment_controller.supports_snow_imprints():
+		_snow_kickup_timer = 0.0
+		return
+	if not is_instance_valid(_player):
+		return
+	var velocity: Vector2 = _player.velocity
+	var speed: float = velocity.length()
+	if speed < SNOW_KICKUP_SPEED_THRESHOLD:
+		_snow_kickup_timer = SNOW_KICKUP_INTERVAL
+		return
+	_snow_kickup_timer += delta
+	if _snow_kickup_timer < SNOW_KICKUP_INTERVAL:
+		return
+	_snow_kickup_timer = 0.0
+	var move_dir: Vector2 = velocity.normalized()
+	if move_dir.length() > 0.0:
+		_last_snow_move_direction = move_dir
+	else:
+		move_dir = _last_snow_move_direction
+	if move_dir.length() == 0.0:
+		move_dir = Vector2.DOWN
+	var normalized_strength: float = 0.0
+	var max_delta: float = max(0.001, SNOW_KICKUP_MAX_SPEED - SNOW_KICKUP_SPEED_THRESHOLD)
+	normalized_strength = clampf((speed - SNOW_KICKUP_SPEED_THRESHOLD) / max_delta, 0.2, 1.0)
+	var base_position: Vector2 = _player.global_position + Vector2(0.0, SNOW_KICKUP_VERTICAL_OFFSET)
+	var forward_offset: Vector2 = move_dir * -14.0
+	var lateral: Vector2 = move_dir.orthogonal()
+	if lateral.is_zero_approx():
+		lateral = Vector2.RIGHT
+	lateral = lateral.normalized()
+	var edge_offset: float = SNOW_EDGE_OFFSET * 0.85
+	var positions: Array[Vector2] = [
+		base_position + lateral * edge_offset + forward_offset,
+		base_position - lateral * edge_offset + forward_offset,
+		base_position + forward_offset * 0.4
+	]
+	for sample_position: Vector2 in positions:
+		_environment_controller.emit_snow_kickup(sample_position, normalized_strength)
+
 func _on_enemy_defeated(_enemy) -> void:
 	_record_stat("enemies_defeated", 1)
 	_record_stat("enemies_defeated_run", 1)
@@ -133,6 +229,22 @@ func set_character_profile(profile) -> void:
 	if _player and _player.has_method("apply_profile"):
 		_player.apply_profile(profile)
 	_configure_player_hud()
+
+func set_environment_profile(biome_id: StringName, time_of_day_id: StringName, seed_override: int = 0) -> void:
+	biome_override = biome_id
+	time_of_day_override = time_of_day_id
+	if seed_override > 0:
+		environment_seed = seed_override
+	if _environment_controller:
+		_environment_controller.set_environment(biome_id, time_of_day_id, seed_override)
+
+func randomize_environment(seed_override: int = 0) -> void:
+	if seed_override > 0:
+		environment_seed = seed_override
+	elif randomize_environment_each_run:
+		environment_seed = _rng.randi()
+	if _environment_controller:
+		_environment_controller.initialize_environment(environment_seed, biome_override, time_of_day_override)
 
 func _resolve_achievement_service() -> AchievementService:
 	if not get_tree():
@@ -182,6 +294,16 @@ func _configure_player_hud() -> void:
 	_connect_player_burst_signal()
 	_connect_player_ammo_signal()
 	_connect_player_burst_ready_signal()
+
+func _configure_environment() -> void:
+	if not _environment_controller:
+		return
+	var seed_value := environment_seed
+	if seed_value <= 0 and randomize_environment_each_run:
+		seed_value = _rng.randi()
+	_environment_controller.initialize_environment(seed_value, biome_override, time_of_day_override)
+	if seed_value > 0:
+		environment_seed = seed_value
 
 func _configure_world_manager() -> void:
 	if not _world_manager:
