@@ -1,6 +1,8 @@
 extends Area2D
 class_name BasicProjectile
 
+const BasicProjectileVisualResource := preload("res://src/projectiles/basic_projectile_visual.gd")
+
 @export var speed := 1200.0
 @export var lifetime := 0.75
 @export var color := Color(1, 0.9, 0.4, 1)
@@ -19,6 +21,8 @@ class_name BasicProjectile
 @export var trail_damage := 0
 @export var trail_color := Color(1.0, 0.4, 0.1, 0.65)
 @export var owner_reference: Node = null
+@export var special_attack: bool = false
+@export var projectile_archetype: String = ""
 
 var _direction: Vector2 = Vector2.RIGHT
 var _age := 0.0
@@ -30,6 +34,20 @@ var _bounces_remaining := 0
 var _distance_since_trail := 0.0
 var _impact_callback: Callable = Callable()
 var _impact_payload: Dictionary = {}
+var _visual: BasicProjectileVisual = null
+var _has_bounced: bool = false
+var _bounce_visuals_enabled: bool = false
+var _trail_positions: Array = []
+var _trail_distance_accumulator: float = 0.0
+var _last_trail_sample: Vector2 = Vector2.ZERO
+var _glow_enabled := false
+var _glow_color: Color = Color(1.0, 1.0, 1.0, 1.0)
+var _glow_energy := 1.0
+var _glow_scale := 1.0
+var _glow_height := 0.0
+
+const TRAIL_SAMPLE_DISTANCE := 12.0
+const MAX_TRAIL_POINTS := 36
 
 const GroundFireScript := preload("res://src/effects/ground_fire.gd")
 const SniperTrailSegmentScript := preload("res://src/effects/sniper_trail_segment.gd")
@@ -46,17 +64,30 @@ func _ready() -> void:
 	connect("area_entered", Callable(self, "_on_area_entered"))
 	set_process(true)
 	_update_collision_shape_radius()
-	queue_redraw()
+	_last_trail_sample = global_position
+	_append_trail_point(global_position)
+	_bounce_visuals_enabled = projectile_archetype.to_lower() == "smg_special"
+	_visual = BasicProjectileVisualResource.new()
+	if _visual:
+		add_child(_visual)
+		_visual.setup(self, _bounce_visuals_enabled)
+		_visual.set_trail_enabled(trail_enabled)
+		_apply_glow_to_visual()
+	_sync_visual_state()
 
 func set_direction(direction: Vector2) -> void:
 	if direction.length() == 0.0:
 		_direction = Vector2.RIGHT
 	else:
 		_direction = direction.normalized()
+	_update_collision_shape_radius()
 	queue_redraw()
 
 func _update_collision_shape_radius() -> void:
 	if _collision_shape == null:
+		return
+	if shape.to_lower() == "laser":
+		_update_laser_collision_shape()
 		return
 	var circle_shape := _collision_shape.shape
 	if circle_shape is CircleShape2D:
@@ -64,9 +95,51 @@ func _update_collision_shape_radius() -> void:
 		if abs(radius - _last_collision_radius) > 0.01:
 			cast_shape.radius = radius
 			_last_collision_radius = radius
+	else:
+		var new_circle := CircleShape2D.new()
+		new_circle.radius = radius
+		_collision_shape.shape = new_circle
+		_last_collision_radius = radius
+	_collision_shape.position = Vector2.ZERO
+	_collision_shape.rotation = 0.0
+
+func _update_laser_collision_shape() -> void:
+	if _collision_shape == null:
+		return
+	var dir := _direction.normalized()
+	if dir == Vector2.ZERO:
+		dir = Vector2.RIGHT
+	var beam_length: float = _compute_laser_beam_length()
+	var beam_half_length: float = beam_length * 0.5
+	var beam_half_width: float = max(_compute_laser_beam_width() * 0.5, radius)
+	if not (_collision_shape.shape is RectangleShape2D):
+		var rectangular := RectangleShape2D.new()
+		rectangular.extents = Vector2(beam_half_length, beam_half_width)
+		_collision_shape.shape = rectangular
+	else:
+		var rect_shape := _collision_shape.shape as RectangleShape2D
+		var new_extents := Vector2(beam_half_length, beam_half_width)
+		if rect_shape.extents != new_extents:
+			rect_shape.extents = new_extents
+	_collision_shape.position = dir * beam_half_length
+	_collision_shape.rotation = dir.angle()
+
+func _compute_laser_beam_length() -> float:
+	return max(radius * 60.0, 180.0)
+
+func _compute_laser_beam_width() -> float:
+	return max(radius * 4.0, 10.0)
 
 func set_owner_reference(new_owner: Node) -> void:
 	owner_reference = new_owner
+
+func configure_glow(enabled: bool, glow_color: Color, glow_energy: float, glow_scale: float, glow_height: float) -> void:
+	_glow_enabled = enabled
+	_glow_color = glow_color
+	_glow_energy = glow_energy
+	_glow_scale = glow_scale
+	_glow_height = glow_height
+	_apply_glow_to_visual()
 
 func set_impact_callback(callback: Callable, payload: Dictionary = {}) -> void:
 	_impact_callback = callback
@@ -79,6 +152,7 @@ func _physics_process(delta: float) -> void:
 	var displacement := _direction * speed * delta
 	position += displacement
 	_distance_travelled += displacement.length()
+	_update_trail_points()
 	if trail_enabled:
 		_distance_since_trail += displacement.length()
 		if _distance_since_trail >= trail_interval:
@@ -93,184 +167,8 @@ func _physics_process(delta: float) -> void:
 	if should_retire:
 		_impact()
 		return
-	queue_redraw()
+	_sync_visual_state()
 
-func _draw() -> void:
-	match shape.to_lower():
-		"laser":
-			_draw_sniper_laser()
-		"tracer":
-			draw_line(Vector2(-radius, 0), Vector2(radius, 0), color, max(1.0, radius * 0.5))
-		"rocket":
-			draw_circle(Vector2.ZERO, radius, color)
-			draw_circle(Vector2(-radius * 0.6, 0), radius * 0.6, color.darkened(0.25))
-		_:
-			draw_circle(Vector2.ZERO, radius, color)
-
-func _draw_sniper_laser() -> void:
-	var forward := _direction
-	if forward.length_squared() == 0.0:
-		forward = Vector2.RIGHT
-	else:
-		forward = forward.normalized()
-	var perp := Vector2(-forward.y, forward.x)
-	var beam_length := float(max(radius * 75.0, 480.0))
-	var base_width := float(max(radius * 2.0, 20.0))
-	var body_start := -forward * beam_length * 0.06
-	var body_end := forward * beam_length * 0.78
-	var tail_tip := body_start - forward * (base_width * 0.85 + beam_length * 0.06)
-	var nose_tip := body_end + forward * (base_width * 0.95 + beam_length * 0.08)
-	var back_shoulder := body_start + forward * base_width * 0.22
-	var front_shoulder := body_end - forward * base_width * 0.1
-	var target_blue := Color(0.58, 0.82, 1.0, 1.0)
-	var sheath_color := color.lerp(target_blue, 0.72)
-	sheath_color.a = 0.9
-	var halo_color := Color(0.4, 0.72, 1.0, 0.22)
-	var flicker := 0.78 + 0.22 * sin(_age * 10.2)
-	_draw_beam_glow(tail_tip, nose_tip, base_width, halo_color, flicker)
-	_draw_diamond_layer(tail_tip, back_shoulder, front_shoulder, nose_tip, forward, perp, base_width, sheath_color, flicker)
-	var core_color := target_blue.lerp(Color(1.0, 1.0, 1.0, 1.0), 0.5)
-	core_color.a = 0.9
-	var inner_color := Color(0.94, 0.99, 1.0, 0.95)
-	_draw_core_spine(back_shoulder, front_shoulder, forward, base_width, core_color, inner_color)
-	_draw_tip_flare(nose_tip, forward, perp, base_width, inner_color, sheath_color)
-	_draw_tail_flare(tail_tip, forward, perp, base_width, halo_color)
-	_draw_energy_crackle(back_shoulder, front_shoulder, forward, perp, base_width * 0.82)
-
-func _draw_beam_glow(tail_tip: Vector2, nose_tip: Vector2, base_width: float, halo_color: Color, flicker: float) -> void:
-	var steps := 3
-	for i in range(steps):
-		var t: float = 0.0
-		if steps > 1:
-			t = float(i) / float(steps - 1)
-		var width: float = lerp(base_width * 2.9, base_width * 1.4, t)
-		var alpha: float = clampf(halo_color.a * lerp(0.55, 0.12, t) * flicker, 0.02, 0.65)
-		var glow := Color(halo_color.r, halo_color.g, halo_color.b, alpha)
-		draw_line(tail_tip, nose_tip, glow, width, true)
-
-func _draw_diamond_layer(tail_tip: Vector2, back_shoulder: Vector2, front_shoulder: Vector2, nose_tip: Vector2, forward: Vector2, perp: Vector2, base_width: float, sheath_color: Color, flicker: float) -> void:
-	var mid_point := back_shoulder.lerp(front_shoulder, 0.5)
-	var shoulder_half := base_width * 0.54
-	var mid_half := base_width * 0.48
-	var front_half := base_width * 0.34
-	var points := PackedVector2Array([
-		tail_tip,
-		back_shoulder - perp * shoulder_half,
-		mid_point - perp * mid_half,
-		front_shoulder - perp * front_half,
-		nose_tip,
-		front_shoulder + perp * front_half,
-		mid_point + perp * mid_half,
-		back_shoulder + perp * shoulder_half
-	])
-	var colors := PackedColorArray([
-		Color(sheath_color.r, sheath_color.g, sheath_color.b, sheath_color.a * 0.05),
-		Color(sheath_color.r, sheath_color.g, sheath_color.b, sheath_color.a * 0.92),
-		Color(sheath_color.r, sheath_color.g, sheath_color.b, sheath_color.a),
-		Color(sheath_color.r, sheath_color.g, sheath_color.b, sheath_color.a * 0.94),
-		Color(sheath_color.r, sheath_color.g, sheath_color.b, sheath_color.a * 0.28 * flicker),
-		Color(sheath_color.r, sheath_color.g, sheath_color.b, sheath_color.a * 0.94),
-		Color(sheath_color.r, sheath_color.g, sheath_color.b, sheath_color.a),
-		Color(sheath_color.r, sheath_color.g, sheath_color.b, sheath_color.a * 0.92)
-	])
-	draw_polygon(points, colors)
-	var inner_tail := tail_tip + forward * base_width * 0.24
-	var inner_mid := back_shoulder.lerp(front_shoulder, 0.5)
-	var inner_half := base_width * 0.26
-	var inner_front_half := base_width * 0.18
-	var bright_color := Color(0.92, 0.98, 1.0, clampf(0.62 * flicker, 0.25, 0.7))
-	var inner_points := PackedVector2Array([
-		inner_tail,
-		back_shoulder - perp * inner_half,
-		inner_mid - perp * (inner_half * 0.85),
-		front_shoulder - perp * inner_front_half,
-		nose_tip,
-		front_shoulder + perp * inner_front_half,
-		inner_mid + perp * (inner_half * 0.85),
-		back_shoulder + perp * inner_half
-	])
-	var inner_colors := PackedColorArray([
-		Color(bright_color.r, bright_color.g, bright_color.b, bright_color.a * 0.12),
-		bright_color,
-		Color(bright_color.r, bright_color.g, bright_color.b, clampf(bright_color.a * 1.05, 0.0, 1.0)),
-		Color(bright_color.r, bright_color.g, bright_color.b, clampf(bright_color.a * 0.88, 0.0, 1.0)),
-		Color(bright_color.r, bright_color.g, bright_color.b, clampf(bright_color.a * 0.36, 0.0, 1.0)),
-		Color(bright_color.r, bright_color.g, bright_color.b, clampf(bright_color.a * 0.88, 0.0, 1.0)),
-		Color(bright_color.r, bright_color.g, bright_color.b, clampf(bright_color.a * 1.05, 0.0, 1.0)),
-		bright_color
-	])
-	draw_polygon(inner_points, inner_colors)
-
-func _draw_core_spine(back_shoulder: Vector2, front_shoulder: Vector2, forward: Vector2, base_width: float, core_color: Color, inner_color: Color) -> void:
-	var mid := back_shoulder.lerp(front_shoulder, 0.5)
-	var core_points := PackedVector2Array([
-		back_shoulder,
-		mid,
-		front_shoulder
-	])
-	var core_colors := PackedColorArray([
-		Color(core_color.r, core_color.g, core_color.b, core_color.a * 0.4),
-		core_color,
-		Color(core_color.r, core_color.g, core_color.b, core_color.a * 0.4)
-	])
-	draw_polyline_colors(core_points, core_colors, base_width * 0.24, true)
-	var inner_points := PackedVector2Array([
-		back_shoulder + forward * base_width * 0.12,
-		front_shoulder - forward * base_width * 0.05
-	])
-	var inner_colors := PackedColorArray([
-		Color(inner_color.r, inner_color.g, inner_color.b, inner_color.a * 0.6),
-		Color(inner_color.r, inner_color.g, inner_color.b, inner_color.a * 0.45)
-	])
-	draw_polyline_colors(inner_points, inner_colors, base_width * 0.12, true)
-
-func _draw_tip_flare(nose_tip: Vector2, forward: Vector2, perp: Vector2, base_width: float, inner_color: Color, sheath_color: Color) -> void:
-	var tip_color := Color(inner_color.r, inner_color.g, inner_color.b, clampf(inner_color.a * 1.05, 0.0, 1.0))
-	var sheath := Color(sheath_color.r, sheath_color.g, sheath_color.b, clampf(sheath_color.a * 1.15, 0.0, 1.0))
-	var triangle := PackedVector2Array([
-		nose_tip,
-		nose_tip - forward * base_width * 0.72 + perp * base_width * 0.22,
-		nose_tip - forward * base_width * 0.72 - perp * base_width * 0.22
-	])
-	var colors := PackedColorArray([
-		tip_color,
-		sheath,
-		sheath
-	])
-	draw_polygon(triangle, colors)
-	draw_circle(nose_tip, base_width * 0.24, tip_color)
-
-func _draw_tail_flare(tail_tip: Vector2, forward: Vector2, perp: Vector2, base_width: float, halo_color: Color) -> void:
-	var tail_color := Color(halo_color.r, halo_color.g, halo_color.b, clampf(halo_color.a * 1.8, 0.0, 0.55))
-	var triangle := PackedVector2Array([
-		tail_tip,
-		tail_tip + forward * base_width * 0.68 + perp * base_width * 0.2,
-		tail_tip + forward * base_width * 0.68 - perp * base_width * 0.2
-	])
-	var tail_colors := PackedColorArray([
-		tail_color,
-		Color(tail_color.r, tail_color.g, tail_color.b, tail_color.a * 0.35),
-		Color(tail_color.r, tail_color.g, tail_color.b, tail_color.a * 0.35)
-	])
-	draw_polygon(triangle, tail_colors)
-	draw_circle(tail_tip + forward * base_width * 0.32, base_width * 0.22, Color(tail_color.r, tail_color.g, tail_color.b, tail_color.a * 0.5))
-
-func _draw_energy_crackle(start: Vector2, finish: Vector2, forward: Vector2, perp: Vector2, base_width: float) -> void:
-	var length := (finish - start).length()
-	if length <= 0.0:
-		return
-	var segments := 6
-	for i in range(segments):
-		var phase := _age * 9.5 + float(i) * 0.9
-		var t := fposmod(phase, 1.0)
-		var center := start + forward * (length * t)
-		var variance := sin(_age * 16.0 + float(i) * 2.5)
-		var span := base_width * (0.22 + 0.16 * float(i % 3))
-		var offset := perp * span * variance
-		var alpha := clampf(0.48 + 0.22 * abs(cos(phase * 2.3)), 0.36, 0.86)
-		var arc_color := Color(0.72, 0.9, 1.0, alpha)
-		draw_line(center - offset, center + offset, arc_color, max(1.0, base_width * 0.06))
-		draw_circle(center + offset * 0.1, base_width * 0.12, Color(0.9, 0.97, 1.0, 0.6))
 
 func _on_body_entered(body: Node) -> void:
 	_apply_damage_to(body)
@@ -302,8 +200,10 @@ func _apply_damage_to(target: Node) -> void:
 	if not bounced and _remaining_penetration <= 0:
 		_impact()
 
+
 func _attempt_bounce(excluded_id: int) -> bool:
 	_bounces_remaining -= 1
+	var bounce_origin := global_position
 	var candidates := get_tree().get_nodes_in_group("enemies")
 	var closest_enemy: Node2D = null
 	var closest_distance := INF
@@ -329,24 +229,80 @@ func _attempt_bounce(excluded_id: int) -> bool:
 	_direction = (closest_enemy.global_position - global_position).normalized()
 	if enemy_targeting:
 		_hit_instances.erase(closest_enemy.get_instance_id())
+	_on_successful_bounce(bounce_origin)
 	return true
+
+func _append_trail_point(point: Vector2) -> void:
+	_trail_positions.append(point)
+	if _trail_positions.size() > MAX_TRAIL_POINTS:
+		_trail_positions.pop_front()
+
+func _update_trail_points() -> void:
+	var current_global := global_position
+	if _trail_positions.is_empty():
+		_append_trail_point(current_global)
+		_last_trail_sample = current_global
+		return
+	_trail_distance_accumulator += current_global.distance_to(_last_trail_sample)
+	if _trail_distance_accumulator >= TRAIL_SAMPLE_DISTANCE:
+		_trail_distance_accumulator = 0.0
+		_append_trail_point(current_global)
+		_last_trail_sample = current_global
+
+func _sync_visual_state() -> void:
+	if _visual == null:
+		return
+	_visual.set_trail_enabled(trail_enabled)
+	_visual.update_visual(_trail_positions, _direction, radius, color, _has_bounced)
+	_apply_glow_to_visual()
+	_update_collision_shape_radius()
+
+func _apply_glow_to_visual() -> void:
+	if _visual == null:
+		return
+	if not _visual.has_method("configure_glow"):
+		return
+	_visual.configure_glow(_glow_enabled, _glow_color, _glow_energy, _glow_scale, _glow_height)
+
+func _on_successful_bounce(bounce_origin: Vector2) -> void:
+	if not _has_bounced:
+		_has_bounced = true
+	if _visual:
+		_visual.emit_bounce()
+	_append_trail_point(bounce_origin)
 
 func _spawn_trail_segment() -> void:
 	if trail_damage <= 0:
 		return
 	if shape.to_lower() == "laser":
 		var segment := SniperTrailSegmentScript.new()
-		segment.radius = max(trail_interval * 0.55, 46.0)
-		segment.damage_per_tick = trail_damage
-		segment.duration = trail_duration
-		segment.tick_interval = 0.28
-		var target_blue := Color(0.58, 0.82, 1.0, 1.0)
-		var blended := trail_color.lerp(target_blue, 0.6)
-		var strength := clampf(trail_color.a, 0.3, 1.0)
-		segment.core_color = Color(0.88, 0.96, 1.0, 0.82 * strength)
-		segment.glow_color = Color(blended.r, blended.g, blended.b, 0.46 * strength)
-		segment.ring_color = Color(blended.r * 0.9 + 0.05, blended.g * 0.95, 1.0, 0.58 * strength)
-		segment.global_position = global_position
+		var end_point: Vector2 = global_position
+		var start_point: Vector2 = end_point - (_direction.normalized() * max(trail_interval, 48.0))
+		if _trail_positions.size() >= 2:
+			start_point = _trail_positions[_trail_positions.size() - 2]
+			end_point = _trail_positions[_trail_positions.size() - 1]
+		print("[BasicProjectile] Sniper trail spawn -> start:", start_point, " end:", end_point, " interval:", trail_interval)
+		var strength := clampf(trail_color.a, 0.25, 1.0)
+		var base_r: float = clampf(trail_color.r * 0.75 + 0.15, 0.0, 1.0)
+		var base_g: float = clampf(trail_color.g * 1.05 + 0.12, 0.0, 1.0)
+		var base_b: float = clampf(trail_color.b * 1.1 + 0.2, 0.0, 1.0)
+		var core_color := Color(base_r, base_g, base_b, 0.85 * strength)
+		var glow_color := Color(clampf(base_r * 0.7, 0.0, 1.0), clampf(base_g * 0.95 + 0.05, 0.0, 1.0), clampf(base_b + 0.18, 0.0, 1.0), 0.55 * strength)
+		var ember_color := Color(clampf(base_r * 0.8 + 0.1, 0.0, 1.0), clampf(base_g, 0.0, 1.0), clampf(base_b + 0.1, 0.0, 1.0), 0.9 * strength)
+		var trail_width: float = max(_compute_laser_beam_width(), max(trail_interval * 0.7, 40.0))
+		segment.configure_segment(
+			start_point,
+			end_point,
+			trail_width,
+			max(trail_duration, 4.0),
+			max(trail_damage, 1),
+			0.3,
+			core_color,
+			glow_color,
+			ember_color
+		)
+		print("[BasicProjectile] Sniper trail configured -> width:", trail_width)
+		segment.align_to_world(segment.get_mid_point())
 		if get_parent():
 			get_parent().add_child(segment)
 		return
@@ -374,6 +330,8 @@ func _impact() -> void:
 	if _is_retired:
 		return
 	_is_retired = true
+	if trail_enabled and trail_damage > 0 and shape.to_lower() == "laser":
+		_spawn_trail_segment()
 	set_deferred("monitoring", false)
 	set_deferred("monitorable", false)
 	queue_free()
