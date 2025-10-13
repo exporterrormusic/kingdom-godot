@@ -23,6 +23,7 @@ const BasicProjectileVisualResource := preload("res://src/projectiles/basic_proj
 @export var owner_reference: Node = null
 @export var special_attack: bool = false
 @export var projectile_archetype: String = ""
+@export var trail_width_multiplier: float = 1.0
 
 var _direction: Vector2 = Vector2.RIGHT
 var _age := 0.0
@@ -51,11 +52,15 @@ const MAX_TRAIL_POINTS := 36
 
 const GroundFireScript := preload("res://src/effects/ground_fire.gd")
 const SniperTrailSegmentScript := preload("res://src/effects/sniper_trail_segment.gd")
+const PROJECTILE_BASE_Z_INDEX := 210
 
 @onready var _collision_shape: CollisionShape2D = $CollisionShape2D
 var _last_collision_radius: float = -1.0
 
 func _ready() -> void:
+	top_level = true
+	z_as_relative = false
+	z_index = PROJECTILE_BASE_Z_INDEX
 	if _direction == Vector2.ZERO:
 		_direction = Vector2.RIGHT
 	_remaining_penetration = max(1, penetration)
@@ -72,7 +77,7 @@ func _ready() -> void:
 		add_child(_visual)
 		_visual.setup(self, _bounce_visuals_enabled)
 		_visual.set_trail_enabled(trail_enabled)
-		_apply_glow_to_visual()
+		_ensure_default_glow()
 	_sync_visual_state()
 
 func set_direction(direction: Vector2) -> void:
@@ -264,6 +269,103 @@ func _apply_glow_to_visual() -> void:
 		return
 	_visual.configure_glow(_glow_enabled, _glow_color, _glow_energy, _glow_scale, _glow_height)
 
+func apply_default_glow() -> void:
+	var base_color := color if color else Color(1.0, 0.8, 0.4, 1.0)
+	var archetype := projectile_archetype.to_lower()
+	var shape_key := String(shape).to_lower()
+	var params := _resolve_default_glow_parameters(base_color, archetype, shape_key)
+	configure_glow(true, params.get("color", base_color), params.get("energy", 0.8), params.get("scale", 0.6), params.get("height", 0.0))
+
+func _ensure_default_glow() -> void:
+	if _glow_enabled:
+		_apply_glow_to_visual()
+		return
+	apply_default_glow()
+
+func _resolve_default_glow_parameters(base_color: Color, archetype: String, shape_key: String) -> Dictionary:
+	var glow_color := _warm_glow_from(base_color)
+	var glow_energy := 0.78
+	var glow_scale := clampf(radius * 0.28, 0.32, 1.15)
+	var glow_height := -1.0
+	match shape_key:
+		"laser":
+			glow_color = Color(0.75, 0.92, 1.0, 0.9)
+			glow_energy = 1.6
+			glow_scale = clampf(radius * 0.22 + 1.4, 1.4, 2.8)
+			glow_height = 0.0
+		"tracer":
+			glow_color = Color(base_color.r, base_color.g * 0.9, base_color.b * 0.6, 0.78)
+			glow_energy = 1.1
+			glow_scale = clampf(radius * 0.4, 0.45, 1.6)
+			glow_height = -2.0
+		"neon":
+			glow_color = Color(0.2, 0.9, 1.0, 0.85)
+			glow_energy = 1.35
+			glow_scale = clampf(radius * 0.36, 0.5, 1.7)
+			glow_height = -1.5
+		"pellet":
+			glow_color = _warm_glow_from(base_color).lerp(Color(1.0, 0.52, 0.2, 0.36), 0.32)
+			glow_energy = 0.24
+			glow_scale = clampf(radius * 0.09, 0.12, 0.36)
+			glow_height = -0.08
+	match archetype:
+		"assault":
+			glow_color = _warm_glow_from(base_color).lerp(Color(1.0, 0.52, 0.2, 0.88), 0.42)
+			glow_energy = 0.62
+			glow_scale = clampf(radius * 0.22, 0.34, 0.86)
+			glow_height = -1.4
+		"smg":
+			glow_color = _warm_glow_from(base_color).lerp(Color(1.0, 0.58, 0.3, 0.32), 0.34)
+			glow_energy = 0.3
+			glow_scale = clampf(radius * 0.12, 0.16, 0.48)
+			glow_height = -0.08
+		"smg_special":
+			glow_color = Color(0.22, 0.88, 1.0, 0.9)
+			glow_energy = 1.4
+			glow_scale = clampf(radius * 0.4, 0.5, 1.6)
+			glow_height = -2.2
+		"shotgun":
+			var ember_base := _warm_glow_from(base_color)
+			glow_color = Color(
+				clampf(ember_base.r * 1.05, 0.0, 1.0),
+				clampf(ember_base.g * 0.62, 0.0, 1.0),
+				clampf(ember_base.b * 0.5, 0.0, 1.0),
+				0.82
+			)
+			glow_energy = 0.28
+			glow_scale = clampf(radius * 0.26, 0.28, 0.72)
+			glow_height = -0.18
+		"shotgun_special":
+			var blaze := Color(
+				clampf(base_color.r * 1.08 + 0.05, 0.0, 1.0),
+				clampf(base_color.g * 0.38, 0.0, 1.0),
+				clampf(base_color.b * 0.24, 0.0, 1.0),
+				0.95
+			)
+			glow_color = blaze
+			glow_energy = 0.44
+			glow_scale = clampf(radius * 0.34, 0.4, 1.1)
+			glow_height = -0.22
+		"minigun":
+			glow_color = _warm_glow_from(base_color).lerp(Color(1.0, 0.38, 0.08, 0.98), 0.5)
+			glow_energy = 1.05
+			glow_scale = clampf(radius * 0.3, 0.42, 1.2)
+			glow_height = -2.4
+	return {
+		"color": glow_color,
+		"energy": glow_energy,
+		"scale": glow_scale,
+		"height": glow_height
+	}
+
+func _warm_glow_from(base_color: Color) -> Color:
+	return Color(
+		clampf(base_color.r * 1.05 + 0.15, 0.0, 1.0),
+		clampf(base_color.g * 0.6 + 0.12, 0.0, 1.0),
+		clampf(base_color.b * 0.28 + 0.05, 0.0, 1.0),
+		clampf(base_color.a * 0.78 + 0.18, 0.0, 1.0)
+	)
+
 func _on_successful_bounce(bounce_origin: Vector2) -> void:
 	if not _has_bounced:
 		_has_bounced = true
@@ -290,6 +392,7 @@ func _spawn_trail_segment() -> void:
 		var glow_color := Color(clampf(base_r * 0.7, 0.0, 1.0), clampf(base_g * 0.95 + 0.05, 0.0, 1.0), clampf(base_b + 0.18, 0.0, 1.0), 0.55 * strength)
 		var ember_color := Color(clampf(base_r * 0.8 + 0.1, 0.0, 1.0), clampf(base_g, 0.0, 1.0), clampf(base_b + 0.1, 0.0, 1.0), 0.9 * strength)
 		var trail_width: float = max(_compute_laser_beam_width(), max(trail_interval * 0.7, 40.0))
+		trail_width *= clampf(trail_width_multiplier, 0.25, 4.0)
 		segment.configure_segment(
 			start_point,
 			end_point,

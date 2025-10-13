@@ -13,3 +13,11 @@ script = ExtResource(1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource(1)
+
+[node name="GlowLight" type="PointLight2D" parent="."]
+color = Color(0.7, 0.9, 1, 1)
+energy = 1.0
+texture_scale = 1.0
+shadow_enabled = false
+height = -12.0
+z_index = 5

@@ -11,7 +11,6 @@ class_name CharacterData
 @export var move_speed: float = 400.0
 @export var dash_speed: float = 900.0
 @export var dash_duration: float = 0.2
-@export var dash_cooldown: float = 1.0
 @export var fire_rate: float = 0.25
 @export var projectile_speed: float = 1200.0
 @export var projectile_lifetime: float = 0.75

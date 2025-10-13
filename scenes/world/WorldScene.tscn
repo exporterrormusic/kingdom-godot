@@ -29,6 +29,7 @@ script = ExtResource(4)
 [node name="EnemyContainer" type="Node2D" parent="."]
 
 [node name="HUD" type="CanvasLayer" parent="."]
+layer = 80
 
 [node name="MarginContainer" type="MarginContainer" parent="HUD"]
 theme_override_constants/margin_left = 16

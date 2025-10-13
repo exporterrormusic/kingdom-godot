@@ -18,6 +18,9 @@ const SNOW_FOOTPRINT_FADE := 0.8
 const SNOW_PATH_RADIUS := 120.0
 const SNOW_PARTICLE_LIFETIME := 0.55
 const SNOW_PARTICLE_GRAVITY := 420.0
+const WORLD_BORDER_THICKNESS := 60.0
+const WORLD_BORDER_COLOR := Color(0.08, 0.08, 0.1, 1.0)
+const VIGNETTE_SHADER_PATH := "res://resources/shaders/environment_vignette.gdshader"
 
 var _active_biome: BiomeDefinition = null
 var _active_time: TimeOfDayDefinition = null
@@ -31,17 +34,22 @@ var _snow_imprint_image: Image = null
 var _snow_imprint_texture: ImageTexture = null
 var _snow_imprint_enabled: bool = false
 var _snow_particle_texture: Texture2D = null
+var _current_ambient_path: String = ""
+var _world_bounds: Rect2 = Rect2()
 
 @onready var _background: Polygon2D = _ensure_background()
 @onready var _ground: Polygon2D = _ensure_ground()
 @onready var _decor_container: Node2D = _ensure_decor_container()
 @onready var _fog_overlay: ColorRect = _ensure_fog_overlay()
-@onready var _overlay_canvas: CanvasLayer = _ensure_overlay_canvas()
-@onready var _snow_overlay: ColorRect = _ensure_snow_overlay()
+@onready var _overlay_canvas: Node2D = _ensure_overlay_canvas()
+@onready var _vignette_overlay: ColorRect = _ensure_vignette_overlay()
+@onready var _snow_overlay: Polygon2D = _ensure_snow_overlay()
 @onready var _snow_pile_container: Node2D = _ensure_snow_pile_container()
 @onready var _snow_particle_container: Node2D = _ensure_snow_particle_container()
 @onready var _canvas_modulate: CanvasModulate = _ensure_canvas_modulate()
 @onready var _sun_light: DirectionalLight2D = _ensure_sun_light()
+@onready var _audio_director: AudioDirector = _resolve_audio_director()
+@onready var _border_overlay: Node2D = _ensure_border_overlay()
 
 func _ready() -> void:
 	_update_ground_geometry()
@@ -66,11 +74,16 @@ func _process(delta: float) -> void:
 		var snow_material := _snow_overlay.material as ShaderMaterial
 		if snow_material:
 			snow_material.set_shader_parameter("time_flow", _time_flow)
-			snow_material.set_shader_parameter("view_size", _get_view_size())
-			var wind_dir := Vector2(_active_biome.wind_strength if _active_biome else 0.4, -1.0)
+			snow_material.set_shader_parameter("view_size", _get_camera_view_size())
+			var wind_power := _active_biome.wind_strength if _active_biome else 0.4
+			var wind_dir := Vector2(wind_power * 0.55, -0.65)
 			snow_material.set_shader_parameter("wind_direction", wind_dir)
 			snow_material.set_shader_parameter("world_offset", _compute_camera_world_offset())
+	_update_overlay_transform()
 	_update_decoration_animations(delta)
+
+func _exit_tree() -> void:
+	_stop_ambient_audio()
 
 func initialize_environment(seed_override: int = 0, biome_id: StringName = &"", time_id: StringName = &"") -> void:
 	_configure_rng(seed_override)
@@ -80,6 +93,7 @@ func initialize_environment(seed_override: int = 0, biome_id: StringName = &"", 
 	_apply_time_of_day_settings()
 	_spawn_decorations()
 	emit_signal("environment_changed", _get_biome_id(), _get_time_id())
+	_update_ambient_audio()
 
 func set_environment(biome_id: StringName, time_id: StringName, seed_override: int = 0) -> void:
 	initialize_environment(seed_override, biome_id, time_id)
@@ -100,6 +114,12 @@ func _configure_rng(seed_value: int) -> void:
 		_rng.seed = seed_value
 	else:
 		_rng.randomize()
+
+func set_world_bounds(bounds: Rect2) -> void:
+	_world_bounds = bounds
+	_update_ground_geometry()
+	_update_border_overlay()
+	_update_snow_overlay_polygon(_get_camera_global_position())
 
 func _rebuild_lookups() -> void:
 	_biome_lookup.clear()
@@ -135,6 +155,22 @@ func _get_biome_id() -> StringName:
 func _get_time_id() -> StringName:
 	return _active_time.time_id if _active_time and _active_time.time_id != &"" else StringName("")
 
+func is_night_time() -> bool:
+	if _active_time == null:
+		return false
+	var raw_id := String(_active_time.time_id) if _active_time.time_id != &"" else _active_time.display_name
+	var lowered := raw_id.to_lower()
+	if lowered.find("night") != -1 or lowered.find("midnight") != -1:
+		return true
+	if _active_time.light_energy <= 0.45:
+		return true
+	if _active_time.ambient_intensity <= 0.55:
+		return true
+	return false
+
+func is_day_time() -> bool:
+	return not is_night_time()
+
 func _ensure_background() -> Polygon2D:
 	var node := get_node_or_null("Background")
 	if node and node is Polygon2D:
@@ -167,6 +203,16 @@ func _ensure_decor_container() -> Node2D:
 	add_child(container)
 	return container
 
+func _ensure_border_overlay() -> Node2D:
+	var node := get_node_or_null("BorderOverlay")
+	if node and node is Node2D:
+		return node
+	var border := Node2D.new()
+	border.name = "BorderOverlay"
+	border.z_index = -140
+	add_child(border)
+	return border
+
 func _ensure_fog_overlay() -> ColorRect:
 	var node := get_node_or_null("FogOverlay")
 	if node and node is ColorRect:
@@ -180,39 +226,79 @@ func _ensure_fog_overlay() -> ColorRect:
 	add_child(fog)
 	return fog
 
-func _ensure_overlay_canvas() -> CanvasLayer:
+func _ensure_overlay_canvas() -> Node2D:
 	var node := get_node_or_null("EnvironmentOverlay")
-	if node and node is CanvasLayer:
+	if node and node is Node2D:
 		return node
-	var layer := CanvasLayer.new()
-	layer.name = "EnvironmentOverlay"
-	layer.layer = 0
-	add_child(layer)
+	var overlay := Node2D.new()
+	overlay.name = "EnvironmentOverlay"
+	overlay.z_index = 60
+	overlay.top_level = true
+	overlay.z_as_relative = false
+	add_child(overlay)
 	if Engine.is_editor_hint():
-		layer.owner = get_tree().edited_scene_root
-	return layer
+		overlay.owner = get_tree().edited_scene_root
+	return overlay
 
-func _ensure_snow_overlay() -> ColorRect:
+func _ensure_vignette_overlay() -> ColorRect:
+	if _overlay_canvas == null:
+		return null
+	var node := _overlay_canvas.get_node_or_null("VignetteOverlay")
+	if node and node is ColorRect:
+		return node
+	var vignette := ColorRect.new()
+	vignette.name = "VignetteOverlay"
+	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vignette.color = Color(0.0, 0.0, 0.0, 0.0)
+	vignette.z_index = 200
+	var view_size := _get_camera_view_size()
+	vignette.size = view_size
+	vignette.position = -view_size * 0.5
+	var shader := load(VIGNETTE_SHADER_PATH)
+	if shader:
+		var shader_material := ShaderMaterial.new()
+		shader_material.shader = shader
+		vignette.material = shader_material
+	else:
+		vignette.visible = false
+	_overlay_canvas.add_child(vignette)
+	if Engine.is_editor_hint():
+		vignette.owner = get_tree().edited_scene_root
+	return vignette
+
+func _configure_vignette_overlay(strength: float) -> void:
+	if _vignette_overlay == null:
+		return
+	if strength <= 0.01:
+		_vignette_overlay.visible = false
+		BasicProjectileVisual.set_vignette_profile(0.0, 0.5, 0.4, _get_camera_view_size())
+		return
+	_vignette_overlay.visible = true
+	var view_size := _get_camera_view_size()
+	_vignette_overlay.size = view_size
+	_vignette_overlay.position = -view_size * 0.5
+	var shader_material := _vignette_overlay.material as ShaderMaterial
+	var clamped_strength := clampf(strength, 0.0, 1.0)
+	var inner_radius := lerpf(0.38, 0.62, clampf(1.0 - clamped_strength, 0.0, 1.0))
+	var softness := lerpf(0.24, 0.48, 1.0 - clamped_strength)
+	if shader_material:
+		shader_material.set_shader_parameter("vignette_strength", clamped_strength)
+		shader_material.set_shader_parameter("inner_radius", inner_radius)
+		shader_material.set_shader_parameter("softness", softness)
+		shader_material.set_shader_parameter("tint", Color(0.0, 0.0, 0.0, 1.0))
+	BasicProjectileVisual.set_vignette_profile(clamped_strength, inner_radius, softness, view_size)
+
+func _ensure_snow_overlay() -> Polygon2D:
 	if _overlay_canvas == null:
 		return null
 	var node := _overlay_canvas.get_node_or_null("SnowOverlay")
-	if node and node is ColorRect:
+	if node and node is Polygon2D:
 		return node
-	var snow := ColorRect.new()
+	var snow := Polygon2D.new()
 	snow.name = "SnowOverlay"
-	snow.color = Color(1.0, 1.0, 1.0, 0.0)
-	snow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	snow.z_index = 50
-	snow.anchor_left = 0.0
-	snow.anchor_top = 0.0
-	snow.anchor_right = 1.0
-	snow.anchor_bottom = 1.0
-	snow.offset_left = 0.0
-	snow.offset_top = 0.0
-	snow.offset_right = 0.0
-	snow.offset_bottom = 0.0
 	var view_size := _get_view_size()
-	snow.custom_minimum_size = view_size
+	snow.polygon = _build_overlay_polygon(view_size)
 	var shader := load(SNOW_SHADER_PATH)
 	if shader:
 		var snow_shader_material := ShaderMaterial.new()
@@ -225,6 +311,15 @@ func _ensure_snow_overlay() -> ColorRect:
 	if Engine.is_editor_hint():
 		snow.owner = get_tree().edited_scene_root
 	return snow
+
+func _build_overlay_polygon(view_size: Vector2) -> PackedVector2Array:
+	var half := view_size * 0.5
+	return PackedVector2Array([
+		Vector2(-half.x, -half.y),
+		Vector2(half.x, -half.y),
+		Vector2(half.x, half.y),
+		Vector2(-half.x, half.y)
+	])
 
 func _ensure_snow_pile_container() -> Node2D:
 	var node := get_node_or_null("SnowPiles")
@@ -275,41 +370,128 @@ func _ensure_sun_light() -> DirectionalLight2D:
 	return sun
 
 func _update_ground_geometry() -> void:
-	var view_size := _get_view_size()
-	var dynamic_extent := maxf(ground_extent, maxf(view_size.x, view_size.y) * 6.0)
-	_effective_ground_extent = dynamic_extent
-	var half := _effective_ground_extent * 0.5
-	var polygon := PackedVector2Array([
-		Vector2(-half, -half),
-		Vector2(half, -half),
-		Vector2(half, half),
-		Vector2(-half, half)
-	])
-	var uv_scale := _effective_ground_extent / 512.0
-	var uvs := PackedVector2Array([
-		Vector2(0.0, 0.0),
-		Vector2(uv_scale, 0.0),
-		Vector2(uv_scale, uv_scale),
-		Vector2(0.0, uv_scale)
-	])
+	var use_world_bounds := _world_bounds.size != Vector2.ZERO
+	var polygon := PackedVector2Array()
+	var uvs := PackedVector2Array()
+	if use_world_bounds:
+		var min_corner := _world_bounds.position
+		var max_corner := _world_bounds.position + _world_bounds.size
+		polygon = PackedVector2Array([
+			Vector2(min_corner.x, min_corner.y),
+			Vector2(max_corner.x, min_corner.y),
+			Vector2(max_corner.x, max_corner.y),
+			Vector2(min_corner.x, max_corner.y)
+		])
+		var uv_scale := Vector2(max(0.01, _world_bounds.size.x) / 512.0, max(0.01, _world_bounds.size.y) / 512.0)
+		uvs = PackedVector2Array([
+			Vector2(0.0, 0.0),
+			Vector2(uv_scale.x, 0.0),
+			Vector2(uv_scale.x, uv_scale.y),
+			Vector2(0.0, uv_scale.y)
+		])
+		_effective_ground_extent = maxf(_world_bounds.size.x, _world_bounds.size.y)
+	else:
+		var view_size := _get_view_size()
+		var dynamic_extent := maxf(ground_extent, maxf(view_size.x, view_size.y) * 6.0)
+		_effective_ground_extent = dynamic_extent
+		var half := _effective_ground_extent * 0.5
+		polygon = PackedVector2Array([
+			Vector2(-half, -half),
+			Vector2(half, -half),
+			Vector2(half, half),
+			Vector2(-half, half)
+		])
+		var uv_scalar := _effective_ground_extent / 512.0
+		uvs = PackedVector2Array([
+			Vector2(0.0, 0.0),
+			Vector2(uv_scalar, 0.0),
+			Vector2(uv_scalar, uv_scalar),
+			Vector2(0.0, uv_scalar)
+		])
 	if _ground:
 		_ground.polygon = polygon
 		_ground.uv = uvs
 		_ground.offset = Vector2.ZERO
-	var sky_half := _effective_ground_extent * 0.75
-	var sky_polygon := PackedVector2Array([
-		Vector2(-sky_half, -sky_half),
-		Vector2(sky_half, -sky_half),
-		Vector2(sky_half, sky_half),
-		Vector2(-sky_half, sky_half)
-	])
+	var sky_polygon := PackedVector2Array()
+	if use_world_bounds:
+		var expansion := Vector2(WORLD_BORDER_THICKNESS, WORLD_BORDER_THICKNESS)
+		var min_corner := _world_bounds.position - expansion
+		var max_corner := _world_bounds.position + _world_bounds.size + expansion
+		sky_polygon = PackedVector2Array([
+			Vector2(min_corner.x, min_corner.y),
+			Vector2(max_corner.x, min_corner.y),
+			Vector2(max_corner.x, max_corner.y),
+			Vector2(min_corner.x, max_corner.y)
+		])
+	else:
+		var sky_half := _effective_ground_extent * 0.75
+		sky_polygon = PackedVector2Array([
+			Vector2(-sky_half, -sky_half),
+			Vector2(sky_half, -sky_half),
+			Vector2(sky_half, sky_half),
+			Vector2(-sky_half, sky_half)
+		])
 	if _background:
 		_background.polygon = sky_polygon
 		_background.uv = uvs
 	if _fog_overlay:
-		_fog_overlay.size = Vector2.ONE * _effective_ground_extent
-		_fog_overlay.position = -_fog_overlay.size * 0.5
+		if use_world_bounds:
+			_fog_overlay.size = _world_bounds.size
+			_fog_overlay.position = _world_bounds.position
+		else:
+			_fog_overlay.size = Vector2.ONE * _effective_ground_extent
+			_fog_overlay.position = -_fog_overlay.size * 0.5
+	_update_border_overlay()
 	_update_overlay_layout()
+
+
+func _update_border_overlay() -> void:
+	if _border_overlay == null:
+		return
+	for child in _border_overlay.get_children():
+		child.queue_free()
+	if _world_bounds.size == Vector2.ZERO:
+		_border_overlay.visible = false
+		return
+	_border_overlay.visible = true
+	var min_corner := _world_bounds.position
+	var size := _world_bounds.size
+	var max_corner := min_corner + size
+	var thickness := WORLD_BORDER_THICKNESS
+	var segments := [
+		PackedVector2Array([
+			Vector2(min_corner.x - thickness, min_corner.y - thickness),
+			Vector2(min_corner.x, min_corner.y - thickness),
+			Vector2(min_corner.x, max_corner.y + thickness),
+			Vector2(min_corner.x - thickness, max_corner.y + thickness)
+		]),
+		PackedVector2Array([
+			Vector2(max_corner.x, min_corner.y - thickness),
+			Vector2(max_corner.x + thickness, min_corner.y - thickness),
+			Vector2(max_corner.x + thickness, max_corner.y + thickness),
+			Vector2(max_corner.x, max_corner.y + thickness)
+		]),
+		PackedVector2Array([
+			Vector2(min_corner.x - thickness, min_corner.y - thickness),
+			Vector2(max_corner.x + thickness, min_corner.y - thickness),
+			Vector2(max_corner.x + thickness, min_corner.y),
+			Vector2(min_corner.x - thickness, min_corner.y)
+		]),
+		PackedVector2Array([
+			Vector2(min_corner.x - thickness, max_corner.y),
+			Vector2(max_corner.x + thickness, max_corner.y),
+			Vector2(max_corner.x + thickness, max_corner.y + thickness),
+			Vector2(min_corner.x - thickness, max_corner.y + thickness)
+		])
+	]
+	for polygon_points in segments:
+		var polygon := Polygon2D.new()
+		polygon.z_index = _border_overlay.z_index
+		polygon.color = WORLD_BORDER_COLOR
+		polygon.polygon = polygon_points
+		_border_overlay.add_child(polygon)
+		if Engine.is_editor_hint():
+			polygon.owner = get_tree().edited_scene_root
 
 func _get_shader_material() -> ShaderMaterial:
 	if not _ground:
@@ -379,7 +561,9 @@ func _apply_time_of_day_settings() -> void:
 	var is_default_day := _active_time != null and _active_time.time_id == &"day"
 	if is_default_day:
 		if _canvas_modulate:
-			_canvas_modulate.color = Color(1.0, 1.0, 1.0, 1.0)
+			var day_color := Color(1.0, 1.0, 1.0, 1.0)
+			_canvas_modulate.color = day_color
+			_update_projectile_ambient_compensation(day_color)
 		if _fog_overlay:
 			_fog_overlay.color = Color(1.0, 1.0, 1.0, 0.0)
 		if _background:
@@ -390,11 +574,16 @@ func _apply_time_of_day_settings() -> void:
 		if _sun_light:
 			_sun_light.visible = false
 			_sun_light.energy = 0.0
+		_configure_vignette_overlay(0.0)
 		return
 	if _canvas_modulate and _active_time:
-		_canvas_modulate.color = _active_time.get_canvas_modulate()
+		var modulate_color := _active_time.get_canvas_modulate()
+		_canvas_modulate.color = modulate_color
+		_update_projectile_ambient_compensation(modulate_color)
 	elif _canvas_modulate:
-		_canvas_modulate.color = Color(1.0, 1.0, 1.0, 1.0)
+		var default_color := Color(1.0, 1.0, 1.0, 1.0)
+		_canvas_modulate.color = default_color
+		_update_projectile_ambient_compensation(default_color)
 	if _fog_overlay:
 		if _active_time:
 			var fog_color := _active_time.fog_color
@@ -418,6 +607,16 @@ func _apply_time_of_day_settings() -> void:
 		else:
 			_sun_light.color = Color(1.0, 0.96, 0.85, 1.0)
 			_sun_light.energy = 1.0
+	var vignette_strength := 0.0
+	if _active_time:
+		vignette_strength = clampf(_active_time.vignette_strength, 0.0, 1.0)
+	_configure_vignette_overlay(vignette_strength)
+
+func _update_projectile_ambient_compensation(modulate_color: Color) -> void:
+	var luminance := modulate_color.r * 0.299 + modulate_color.g * 0.587 + modulate_color.b * 0.114
+	var clamped_luminance := clampf(luminance, 0.2, 1.25)
+	var compensation_strength := clampf(1.0 / clamped_luminance, 1.0, 4.0)
+	BasicProjectileVisual.set_ambient_compensation(compensation_strength)
 
 func _spawn_decorations() -> void:
 	for entry in _decoration_entries:
@@ -488,11 +687,12 @@ func _apply_snow_overlay_settings(biome: BiomeDefinition) -> void:
 		snow_material.set_shader_parameter("view_size", _get_view_size())
 		return
 	_snow_overlay.visible = true
-	var density_scale := clampf(biome.snowfall_density * 0.55 + 0.15, 0.0, 1.2)
+	var base_density := biome.snowfall_density * 0.55 + 0.15
+	var density_scale := clampf(base_density * 0.42 + 0.06, 0.08, 0.95)
 	snow_material.set_shader_parameter("density", density_scale)
-	var flake_scale := clampf(biome.snowfall_scale * 0.42, 0.18, 1.25)
+	var flake_scale := clampf(biome.snowfall_scale * 0.36, 0.2, 1.0)
 	snow_material.set_shader_parameter("flake_scale", flake_scale)
-	snow_material.set_shader_parameter("view_size", _get_view_size())
+	snow_material.set_shader_parameter("view_size", _get_camera_view_size())
 	snow_material.set_shader_parameter("world_offset", _compute_camera_world_offset())
 	snow_material.set_shader_parameter("world_scale", 0.0025)
 
@@ -624,13 +824,53 @@ func emit_snow_kickup(world_position: Vector2, strength: float = 0.45) -> void:
 	_emit_snow_particles(world_position, clampf(strength, 0.0, 1.0))
 
 func _update_overlay_layout() -> void:
-	if _snow_overlay == null:
+	var view_size := _get_camera_view_size()
+	if _snow_overlay:
+		var snow_material := _snow_overlay.material as ShaderMaterial
+		if snow_material:
+			snow_material.set_shader_parameter("view_size", view_size)
+		if _world_bounds.size == Vector2.ZERO:
+			_snow_overlay.polygon = _build_overlay_polygon(view_size)
+		else:
+			_update_snow_overlay_polygon(_get_camera_global_position())
+	if _vignette_overlay:
+		_vignette_overlay.size = view_size
+		_vignette_overlay.position = -view_size * 0.5
+
+func _update_overlay_transform() -> void:
+	if _overlay_canvas == null:
 		return
-	var view_size := _get_view_size()
-	_snow_overlay.custom_minimum_size = view_size
-	var snow_material := _snow_overlay.material as ShaderMaterial
-	if snow_material:
-		snow_material.set_shader_parameter("view_size", view_size)
+	var viewport := get_viewport()
+	if viewport == null:
+		return
+	var camera := viewport.get_camera_2d()
+	if camera == null:
+		return
+	var camera_position := camera.global_position
+	_overlay_canvas.global_position = camera_position
+	_overlay_canvas.global_rotation = 0.0
+	_overlay_canvas.global_scale = Vector2.ONE
+	_update_snow_overlay_polygon(camera_position)
+
+func _get_camera_view_size() -> Vector2:
+	var viewport := get_viewport()
+	if viewport == null:
+		return _get_view_size()
+	var rect_size := viewport.get_visible_rect().size
+	var camera := viewport.get_camera_2d()
+	if camera:
+		rect_size.x *= camera.zoom.x
+		rect_size.y *= camera.zoom.y
+	return rect_size
+
+func _get_camera_global_position() -> Vector2:
+	var viewport := get_viewport()
+	if viewport == null:
+		return Vector2.ZERO
+	var camera := viewport.get_camera_2d()
+	if camera == null:
+		return Vector2.ZERO
+	return camera.global_position
 
 func _on_viewport_size_changed() -> void:
 	_update_overlay_layout()
@@ -654,6 +894,22 @@ func _compute_camera_world_offset() -> Vector2:
 
 func _get_effective_ground_extent() -> float:
 	return maxf(_effective_ground_extent, ground_extent)
+
+func _update_snow_overlay_polygon(camera_position: Vector2) -> void:
+	if _snow_overlay == null:
+		return
+	if _world_bounds.size == Vector2.ZERO:
+		_snow_overlay.polygon = _build_overlay_polygon(_get_camera_view_size())
+		return
+	var min_corner := _world_bounds.position
+	var max_corner := _world_bounds.position + _world_bounds.size
+	var polygon := PackedVector2Array([
+		Vector2(min_corner.x - camera_position.x, min_corner.y - camera_position.y),
+		Vector2(max_corner.x - camera_position.x, min_corner.y - camera_position.y),
+		Vector2(max_corner.x - camera_position.x, max_corner.y - camera_position.y),
+		Vector2(min_corner.x - camera_position.x, max_corner.y - camera_position.y)
+	])
+	_snow_overlay.polygon = polygon
 
 func _emit_snow_particles(world_position: Vector2, strength: float) -> void:
 	if _snow_particle_container == null:
@@ -719,3 +975,38 @@ func _get_snow_particle_ramp() -> GradientTexture1D:
 	var ramp := GradientTexture1D.new()
 	ramp.gradient = gradient
 	return ramp
+
+func _resolve_audio_director() -> AudioDirector:
+	if not get_tree():
+		return null
+	var root := get_tree().root
+	var candidate := root.find_child("AudioDirector", true, false)
+	if candidate and candidate is AudioDirector:
+		return candidate
+	return null
+
+func _get_audio_director() -> AudioDirector:
+	if _audio_director == null or not is_instance_valid(_audio_director):
+		_audio_director = _resolve_audio_director()
+	return _audio_director
+
+func _update_ambient_audio() -> void:
+	var director := _get_audio_director()
+	if director == null:
+		return
+	var desired_path := ""
+	if _active_biome and _active_biome.ambient_loop_path.strip_edges() != "":
+		desired_path = _active_biome.ambient_loop_path.strip_edges()
+	if desired_path == _current_ambient_path:
+		return
+	if desired_path != "" and ResourceLoader.exists(desired_path):
+		_current_ambient_path = desired_path
+		director.play_ambient_loop(desired_path)
+		return
+	_stop_ambient_audio()
+
+func _stop_ambient_audio() -> void:
+	_current_ambient_path = ""
+	var director := _get_audio_director()
+	if director:
+		director.stop_ambient()

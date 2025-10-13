@@ -21,7 +21,7 @@ func _ready() -> void:
 	shape.radius = radius
 	var collider := CollisionShape2D.new()
 	collider.shape = shape
-	add_child(collider)
+	call_deferred("add_child", collider)
 	_rng.randomize()
 	_embers = []
 	for i in range(max(ember_count, 0)):

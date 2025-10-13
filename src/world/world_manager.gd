@@ -8,6 +8,7 @@ signal wave_started(wave_index: int, definition: Dictionary)
 signal wave_completed(wave_index: int, definition: Dictionary)
 signal objective_updated(text: String)
 signal run_time_updated(total_seconds: float)
+signal boss_spawn_scheduled(wave_index: int, definition: Dictionary)
 
 const DEFAULT_WAVES := [
 	{
@@ -25,9 +26,9 @@ const DEFAULT_WAVES := [
 		"id": 2,
 		"count": 20,
 		"spawn_interval": 1.15,
-		"health_multiplier": 1.1,
-		"speed_multiplier": 1.05,
-		"damage_multiplier": 1.0,
+		"health_multiplier": 1.25,
+		"speed_multiplier": 1.25,
+		"damage_multiplier": 1.25,
 		"enemy_mix": [
 			{"type": "grunt", "weight": 0.6},
 			{"type": "striker", "weight": 0.4, "speed_bonus": 0.15}
@@ -37,9 +38,9 @@ const DEFAULT_WAVES := [
 		"id": 3,
 		"count": 34,
 		"spawn_interval": 1.0,
-		"health_multiplier": 1.2,
-		"speed_multiplier": 1.1,
-		"damage_multiplier": 1.1,
+		"health_multiplier": 1.5,
+		"speed_multiplier": 1.5,
+		"damage_multiplier": 1.5,
 		"enemy_mix": [
 			{"type": "grunt", "weight": 0.4},
 			{"type": "striker", "weight": 0.4, "speed_bonus": 0.2},
@@ -50,9 +51,9 @@ const DEFAULT_WAVES := [
 		"id": 4,
 		"count": 58,
 		"spawn_interval": 0.85,
-		"health_multiplier": 1.35,
-		"speed_multiplier": 1.15,
-		"damage_multiplier": 1.2,
+		"health_multiplier": 1.75,
+		"speed_multiplier": 1.75,
+		"damage_multiplier": 1.75,
 		"enemy_mix": [
 			{"type": "striker", "weight": 0.5, "speed_bonus": 0.2},
 			{"type": "brute", "weight": 0.35, "health_bonus": 0.35},
@@ -63,15 +64,28 @@ const DEFAULT_WAVES := [
 		"id": 5,
 		"count": 96,
 		"spawn_interval": 0.72,
-		"health_multiplier": 1.55,
-		"speed_multiplier": 1.2,
-		"damage_multiplier": 1.35,
+		"health_multiplier": 2.0,
+		"speed_multiplier": 2.0,
+		"damage_multiplier": 2.0,
 		"enemy_mix": [
 			{"type": "striker", "weight": 0.4, "speed_bonus": 0.2},
 			{"type": "brute", "weight": 0.35, "health_bonus": 0.4},
 			{"type": "grenadier", "weight": 0.15},
 			{"type": "warden", "weight": 0.1, "health_bonus": 0.55, "damage_bonus": 0.25}
-		]
+		],
+		"boss": {
+			"type": "overseer_boss",
+			"label": "Overseer Titan",
+			"spawn_delay": 2.5,
+			"reward": {"rapture_cores": 3},
+			"tuning": {
+				"max_health": 280,
+				"move_speed": 190.0,
+				"contact_damage": 42,
+				"scale_multiplier": 2.9,
+				"visual_modulate": Color(0.85, 0.58, 1.0, 1.0)
+			}
+		}
 	}
 ]
 
@@ -84,6 +98,10 @@ var _total_run_time: float = 0.0
 var _run_time_emit_accumulator: float = 0.0
 var _objective_emit_accumulator: float = 0.0
 var _active: bool = false
+
+var _boss_definition: Dictionary = {}
+var _boss_spawned: bool = false
+var _boss_spawn_timer: float = 0.0
 
 var _rng := RandomNumberGenerator.new()
 
@@ -138,6 +156,12 @@ func update(delta: float, active_enemy_count: int) -> Array[Dictionary]:
 		if not request.is_empty():
 			spawn_requests.append(request)
 		_enemies_spawned_in_wave += 1
+	if not _boss_spawned and not _boss_definition.is_empty():
+		if _should_spawn_boss(delta):
+			var boss_request := _build_boss_spawn_request(_boss_definition)
+			if not boss_request.is_empty():
+				spawn_requests.append(boss_request)
+				_boss_spawned = true
 	if _enemies_spawned_in_wave >= int(_current_wave.get("count", 0)) and active_enemy_count <= 0:
 		emit_signal("wave_completed", _current_wave_index, _current_wave.duplicate(true))
 		_advance_to_next_wave()
@@ -159,10 +183,15 @@ func _advance_to_next_wave() -> void:
 	_enemies_spawned_in_wave = 0
 	var spawn_interval: float = float(_current_wave.get("spawn_interval", 1.0))
 	_spawn_progress = spawn_interval # Guarantees an immediate spawn on the next update.
+	_boss_definition = _current_wave.get("boss", {}).duplicate(true)
+	_boss_spawned = false
+	_boss_spawn_timer = 0.0
 	if _current_wave.is_empty():
 		push_warning("WorldManager has no wave data to advance to; stopping spawn loop.")
 		_active = false
 		return
+	if not _boss_definition.is_empty():
+		emit_signal("boss_spawn_scheduled", _current_wave_index, _boss_definition.duplicate(true))
 	emit_signal("wave_started", _current_wave_index, _current_wave.duplicate(true))
 
 func _get_wave_definition(wave_index: int) -> Dictionary:
@@ -175,9 +204,10 @@ func _build_scaled_wave_definition(wave_index: int) -> Dictionary:
 	var wave_multiplier: float = pow(2.0, float(wave_index - 1))
 	var spawn_count: int = max(8, roundi(base_count * wave_multiplier))
 	var spawn_interval: float = max(0.45, 1.4 - float(wave_index) * 0.08)
-	var health_multiplier: float = 1.0 + 0.12 * float(wave_index - 1)
-	var speed_multiplier: float = 1.0 + 0.06 * float(wave_index - 1)
-	var damage_multiplier: float = 1.0 + 0.1 * float(wave_index - 1)
+	var danger_level: int = min(wave_index, 5)
+	var health_multiplier: float = 1.0 + 0.25 * float(danger_level - 1)
+	var speed_multiplier: float = 1.0 + 0.25 * float(wave_index - 1)
+	var damage_multiplier: float = health_multiplier
 	return {
 		"id": wave_index,
 		"count": spawn_count,
@@ -222,6 +252,44 @@ func _build_spawn_request() -> Dictionary:
 		"type": type_name,
 		"scene": scene,
 		"tuning": tuning,
+		"wave_index": _current_wave_index,
+		"wave_definition": _current_wave.duplicate(true)
+	}
+
+func _should_spawn_boss(delta: float) -> bool:
+	var spawn_delay: float = float(_boss_definition.get("spawn_delay", 0.0))
+	if _enemies_spawned_in_wave < int(_current_wave.get("count", 0)):
+		return false
+	_boss_spawn_timer += delta
+	return _boss_spawn_timer >= spawn_delay
+
+func _build_boss_spawn_request(definition: Dictionary) -> Dictionary:
+	var type_name: String = String(definition.get("type", ""))
+	if type_name == "":
+		return {}
+	if not _enemy_catalog.has(type_name):
+		return {}
+	var entry: Dictionary = _enemy_catalog[type_name]
+	var scene: PackedScene = entry.get("scene")
+	if scene == null:
+		return {}
+	var overrides_variant: Variant = definition.get("tuning", {})
+	var mix_modifiers_variant: Variant = definition.get("modifiers", {})
+	var mix_modifiers: Dictionary = {}
+	if typeof(mix_modifiers_variant) == TYPE_DICTIONARY:
+		mix_modifiers = mix_modifiers_variant
+	var tuned_stats := _prepare_enemy_tuning(entry, _current_wave, mix_modifiers)
+	if typeof(overrides_variant) == TYPE_DICTIONARY:
+		var overrides: Dictionary = overrides_variant as Dictionary
+		tuned_stats.merge(overrides, true)
+	return {
+		"type": type_name,
+		"scene": scene,
+		"tuning": tuned_stats,
+		"is_boss": true,
+		"label": String(definition.get("label", "")),
+		"announce": String(definition.get("announce", "")),
+		"reward": definition.get("reward", {}),
 		"wave_index": _current_wave_index,
 		"wave_definition": _current_wave.duplicate(true)
 	}

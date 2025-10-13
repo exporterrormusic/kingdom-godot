@@ -15,6 +15,7 @@ class_name BiomeDefinition
 @export_range(0.0, 1.0, 0.01) var color_variation: float = 0.25
 @export var sky_color: Color = Color(0.25, 0.38, 0.52, 1.0)
 @export var horizon_color: Color = Color(0.32, 0.42, 0.47, 1.0)
+@export var ambient_loop_path: String = ""
 @export var decoration_textures: Array[Texture2D] = []
 @export_range(0, 256, 1) var decoration_count: int = 64
 @export_range(0.2, 4.0, 0.01) var decoration_min_scale: float = 0.75

@@ -1,0 +1,192 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://src/ui/leaderboard_menu.gd" id="1"]
+[ext_resource type="Script" path="res://src/ui/components/venetian_blinds_background.gd" id="2"]
+[ext_resource type="FontFile" path="res://resources/fonts/futura_condensed_extra_bold.tres" id="3"]
+[ext_resource type="FontFile" path="res://resources/fonts/pretendard_medium.tres" id="4"]
+[ext_resource type="FontFile" path="res://resources/fonts/pretendard_bold.tres" id="5"]
+
+[sub_resource type="StyleBoxFlat" id="1"]
+bg_color = Color(0.0705882, 0.0705882, 0.105882, 0.85)
+border_width_top = 2
+border_width_bottom = 2
+border_color = Color(0.388235, 0.388235, 0.466667, 0.9)
+
+[sub_resource type="StyleBoxFlat" id="2"]
+bg_color = Color(0.109804, 0.109804, 0.14902, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.4, 0.4, 0.498039, 1)
+
+[node name="LeaderboardMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="Background" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("2")
+
+[node name="Overlay" type="ColorRect" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.25)
+
+[node name="UiRoot" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 24.0
+offset_right = 0.0
+offset_bottom = -24.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 24
+
+[node name="TitleBar" type="Panel" parent="UiRoot"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 140)
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme_override_styles/panel = SubResource("1")
+
+[node name="TitleVBox" type="VBoxContainer" parent="UiRoot/TitleBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 16.0
+offset_right = -24.0
+offset_bottom = -16.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="UiRoot/TitleBar/TitleVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+text = "LEADERBOARDS"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 90
+
+[node name="SubtitleLabel" type="Label" parent="UiRoot/TitleBar/TitleVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Top survival runs per Nikke"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 28
+modulate = Color(0.784314, 0.792157, 0.878431, 1)
+
+[node name="ContentPanel" type="Panel" parent="UiRoot"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 0)
+theme_override_styles/panel = SubResource("2")
+
+[node name="ContentMargin" type="MarginContainer" parent="UiRoot/ContentPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ContentVBox" type="VBoxContainer" parent="UiRoot/ContentPanel/ContentMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 24
+
+[node name="InfoRow" type="HBoxContainer" parent="UiRoot/ContentPanel/ContentMargin/ContentVBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme_override_constants/separation = 12
+
+[node name="InfoSpacer" type="Control" parent="UiRoot/ContentPanel/ContentMargin/ContentVBox/InfoRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="CoresLabel" type="Label" parent="UiRoot/ContentPanel/ContentMargin/ContentVBox/InfoRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+text = "Rapture Cores: 0"
+horizontal_alignment = 2
+vertical_alignment = 1
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 24
+modulate = Color(0.784314, 0.792157, 0.878431, 1)
+
+[node name="ColumnsScroll" type="ScrollContainer" parent="UiRoot/ContentPanel/ContentMargin/ContentVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+vertical_scroll_mode = 1
+horizontal_scroll_mode = 0
+scroll_deadzone = 8
+
+[node name="ColumnsContainer" type="HBoxContainer" parent="UiRoot/ContentPanel/ContentMargin/ContentVBox/ColumnsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 2
+alignment = 0
+theme_override_constants/separation = 32
+
+[node name="LeftColumn" type="VBoxContainer" parent="UiRoot/ContentPanel/ContentMargin/ContentVBox/ColumnsScroll/ColumnsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 0
+
+[node name="RightColumn" type="VBoxContainer" parent="UiRoot/ContentPanel/ContentMargin/ContentVBox/ColumnsScroll/ColumnsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 0
+
+[node name="EmptyStateLabel" type="Label" parent="UiRoot/ContentPanel/ContentMargin/ContentVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+visible = false
+text = "No leaderboard data available. Complete runs to populate this screen."
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_fonts/font = ExtResource("5")
+theme_override_font_sizes/font_size = 28
+modulate = Color(0.784314, 0.792157, 0.878431, 1)

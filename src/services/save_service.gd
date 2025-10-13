@@ -60,4 +60,8 @@ func _default_state() -> Dictionary:
 	return {
 		"achievements": {},
 		"achievement_stats": {},
+		"leaderboards": {
+			"player_rapture_cores": 0,
+			"character_leaderboards": {}
+		}
 	}

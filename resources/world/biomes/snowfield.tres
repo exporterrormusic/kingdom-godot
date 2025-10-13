@@ -17,6 +17,7 @@ patchwork_strength = 0.55
 color_variation = 0.18
 sky_color = Color(1, 1, 1, 1)
 horizon_color = Color(1, 1, 1, 1)
+ambient_loop_path = "res://assets/sounds/sfx/environment/snow/snow_wind.mp3"
 decoration_textures = []
 decoration_count = 0
 decoration_min_scale = 0.55

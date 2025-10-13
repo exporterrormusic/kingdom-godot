@@ -2,10 +2,14 @@ extends Control
 class_name PauseMenu
 
 signal resume_requested
+signal restart_requested
+signal character_select_requested
 signal settings_requested
 signal quit_to_menu_requested
 
 @onready var _resume_button: Button = %ResumeButton
+@onready var _restart_button: Button = %RestartButton
+@onready var _character_button: Button = %CharacterButton
 @onready var _settings_button: Button = %SettingsButton
 @onready var _quit_button: Button = %QuitButton
 @onready var _wave_value_label: Label = %WaveValue
@@ -20,6 +24,10 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	set_process_unhandled_input(true)
 	_resume_button.pressed.connect(_on_resume_pressed)
+	if _restart_button:
+		_restart_button.pressed.connect(_on_restart_pressed)
+	if _character_button:
+		_character_button.pressed.connect(_on_character_pressed)
 	_settings_button.pressed.connect(_on_settings_pressed)
 	_quit_button.pressed.connect(_on_quit_pressed)
 	_resume_button.grab_focus()
@@ -27,6 +35,12 @@ func _ready() -> void:
 
 func _on_resume_pressed() -> void:
 	emit_signal("resume_requested")
+
+func _on_restart_pressed() -> void:
+	emit_signal("restart_requested")
+
+func _on_character_pressed() -> void:
+	emit_signal("character_select_requested")
 
 func _on_settings_pressed() -> void:
 	emit_signal("settings_requested")

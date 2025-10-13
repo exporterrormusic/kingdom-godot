@@ -15,4 +15,9 @@ class_name TimeOfDayDefinition
 @export_range(0.0, 1.0, 0.01) var vignette_strength: float = 0.0
 
 func get_canvas_modulate() -> Color:
-	return ambient_tint * ambient_intensity
+	return Color(
+		ambient_tint.r * ambient_intensity,
+		ambient_tint.g * ambient_intensity,
+		ambient_tint.b * ambient_intensity,
+		1.0
+	)

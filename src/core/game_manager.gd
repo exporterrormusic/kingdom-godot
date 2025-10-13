@@ -17,12 +17,15 @@ const SaveServiceScript := preload("res://src/services/save_service.gd")
 const AudioDirectorScript := preload("res://src/services/audio_director.gd")
 const InputInitializerScript := preload("res://src/core/input_initializer.gd")
 const AchievementServiceScript := preload("res://src/services/achievement_service.gd")
+const LeaderboardServiceScript := preload("res://src/services/leaderboard_service.gd")
 const MainMenuScene := preload("res://scenes/ui/MainMenu.tscn")
 const AchievementsMenuScene := preload("res://scenes/ui/AchievementsMenu.tscn")
+const LeaderboardMenuScene := preload("res://scenes/ui/LeaderboardMenu.tscn")
 const WorldScene := preload("res://scenes/world/WorldScene.tscn")
 const SettingsMenuScene := preload("res://scenes/ui/SettingsMenu.tscn")
 const PauseMenuScene := preload("res://scenes/ui/PauseMenu.tscn")
 const CharacterSelectScene := preload("res://scenes/ui/CharacterSelectMenu.tscn")
+const GameOverMenuScene := preload("res://scenes/ui/GameOverMenu.tscn")
 const CharacterRosterResource := preload("res://resources/characters/characters.tres")
 
 @onready var _state_service: GameStateService = _resolve_state_service()
@@ -30,6 +33,7 @@ const CharacterRosterResource := preload("res://resources/characters/characters.
 @onready var _save_service: SaveService = _resolve_save_service()
 @onready var _audio_director: AudioDirector = _resolve_audio_director()
 @onready var _achievement_service: AchievementService = _resolve_achievement_service()
+@onready var _leaderboard_service: LeaderboardService = _resolve_leaderboard_service()
 @onready var _scene_root: Node = _create_scene_root()
 @onready var _overlay_layer: CanvasLayer = _create_overlay_layer()
 @onready var _overlay_root: Control = _create_overlay_root()
@@ -37,9 +41,12 @@ const CharacterRosterResource := preload("res://resources/characters/characters.
 var _current_scene: Node = null
 var _overlay_scene: Node = null
 var _return_to_pause_after_settings := false
+var _return_to_game_over_after_settings := false
 var _character_roster: Resource = null
 var _selected_character: Resource = null
 var _selected_mission_config: Dictionary = {}
+var _last_run_record: Dictionary = {}
+var _last_run_outcome: String = "death"
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_SIZE_CHANGED and _overlay_root:
@@ -57,6 +64,7 @@ func _ready() -> void:
 	_state_service.initialize()
 	_state_service.state_changed.connect(_on_state_changed)
 	_initialize_character_roster()
+	_initialize_leaderboard_service()
 	change_state("menu")
 
 func change_state(new_state: String) -> void:
@@ -108,6 +116,15 @@ func _resolve_achievement_service() -> AchievementService:
 	add_child(instance)
 	return instance
 
+func _resolve_leaderboard_service() -> LeaderboardService:
+	var autoload_path := "/root/LeaderboardService"
+	if get_tree() and get_tree().root and get_tree().root.has_node(autoload_path):
+		return get_tree().root.get_node(autoload_path)
+	var instance: LeaderboardService = LeaderboardServiceScript.new()
+	instance.name = "LeaderboardService"
+	add_child(instance)
+	return instance
+
 func _apply_display_settings() -> void:
 	var fullscreen: bool = bool(_config_service.get_value("fullscreen", false))
 	if fullscreen:
@@ -123,8 +140,8 @@ func _apply_audio_settings() -> void:
 	_audio_director.set_master_volume(master_volume)
 	var music_volume: float = float(_config_service.get_value("music_volume", master_volume))
 	var sfx_volume: float = float(_config_service.get_value("sfx_volume", master_volume))
-	_set_bus_volume("Music", music_volume)
-	_set_bus_volume("SFX", sfx_volume)
+	_audio_director.set_music_volume(music_volume)
+	_audio_director.set_sfx_volume(sfx_volume)
 
 func _set_bus_volume(bus_name: String, value: float) -> void:
 	var bus_index := AudioServer.get_bus_index(bus_name)
@@ -154,6 +171,12 @@ func _initialize_achievement_service() -> void:
 		return
 	var save_data := _save_service.get_state()
 	_achievement_service.initialize(_save_service, save_data)
+
+func _initialize_leaderboard_service() -> void:
+	if not _leaderboard_service:
+		return
+	var save_data := _save_service.get_state()
+	_leaderboard_service.initialize(_save_service, save_data, _character_roster)
 
 func _create_scene_root() -> Node:
 	var root := Node.new()
@@ -381,6 +404,7 @@ func _configure_settings_scene(scene: Node, back_callable: Callable) -> void:
 func _show_pause_menu() -> void:
 	_clear_overlay()
 	_return_to_pause_after_settings = false
+	_return_to_game_over_after_settings = false
 	var pause_menu: Control = PauseMenuScene.instantiate()
 	pause_menu.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	_overlay_scene = pause_menu
@@ -389,14 +413,19 @@ func _show_pause_menu() -> void:
 	get_tree().paused = true
 	if pause_menu.has_signal("resume_requested"):
 		pause_menu.connect("resume_requested", Callable(self, "_on_pause_resume_requested"))
+	if pause_menu.has_signal("restart_requested"):
+		pause_menu.connect("restart_requested", Callable(self, "_on_pause_restart_requested"))
+	if pause_menu.has_signal("character_select_requested"):
+		pause_menu.connect("character_select_requested", Callable(self, "_on_pause_character_requested"))
 	if pause_menu.has_signal("settings_requested"):
 		pause_menu.connect("settings_requested", Callable(self, "_on_pause_settings_requested"))
 	if pause_menu.has_signal("quit_to_menu_requested"):
 		pause_menu.connect("quit_to_menu_requested", Callable(self, "_on_pause_quit_requested"))
 
-func _show_settings_overlay(from_pause: bool) -> void:
+func _show_settings_overlay(from_pause: bool, from_game_over: bool = false) -> void:
 	_clear_overlay()
 	_return_to_pause_after_settings = from_pause
+	_return_to_game_over_after_settings = from_game_over
 	var settings_overlay: Control = SettingsMenuScene.instantiate()
 	settings_overlay.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	_overlay_scene = settings_overlay
@@ -411,6 +440,13 @@ func _on_pause_requested() -> void:
 
 func _on_pause_resume_requested() -> void:
 	_clear_overlay(true)
+
+func _on_pause_restart_requested() -> void:
+	_on_game_over_retry_requested()
+
+func _on_pause_character_requested() -> void:
+	_clear_overlay(true)
+	change_state("character_select")
 
 func _on_pause_settings_requested() -> void:
 	_clear_overlay()
@@ -438,12 +474,19 @@ func _assign_pause_run_summary(pause_menu: Control) -> void:
 
 func _on_settings_overlay_back() -> void:
 	var return_to_pause := _return_to_pause_after_settings
-	_clear_overlay(not return_to_pause)
+	var return_to_game_over := _return_to_game_over_after_settings
+	var should_unpause := not return_to_pause and not return_to_game_over
+	_clear_overlay(should_unpause)
 	if return_to_pause:
 		_show_pause_menu()
+	elif return_to_game_over:
+		_show_game_over_overlay(_last_run_outcome, _last_run_record)
 
 func _on_achievements_requested() -> void:
 	_show_achievements_overlay()
+
+func _on_leaderboards_requested() -> void:
+	_show_leaderboard_overlay()
 
 func _show_achievements_overlay() -> void:
 	_clear_overlay()
@@ -460,6 +503,21 @@ func _show_achievements_overlay() -> void:
 func _on_achievements_overlay_closed() -> void:
 	_clear_overlay()
 
+func _show_leaderboard_overlay() -> void:
+	_clear_overlay()
+	var leaderboard_menu: Control = LeaderboardMenuScene.instantiate()
+	_overlay_scene = leaderboard_menu
+	_mount_overlay(leaderboard_menu)
+	if leaderboard_menu.has_method("set_leaderboard_service") and _leaderboard_service:
+		leaderboard_menu.set_leaderboard_service(_leaderboard_service)
+	if leaderboard_menu.has_method("set_roster") and _character_roster:
+		leaderboard_menu.set_roster(_character_roster)
+	if leaderboard_menu.has_signal("closed"):
+		leaderboard_menu.connect("closed", Callable(self, "_on_leaderboard_overlay_closed"))
+
+func _on_leaderboard_overlay_closed() -> void:
+	_clear_overlay()
+
 func _clear_overlay(unpause: bool = false) -> void:
 	if _overlay_scene:
 		_overlay_scene.queue_free()
@@ -468,6 +526,53 @@ func _clear_overlay(unpause: bool = false) -> void:
 	if unpause:
 		get_tree().paused = false
 	_return_to_pause_after_settings = false
+	_return_to_game_over_after_settings = false
+
+func _show_game_over_overlay(outcome: String, record: Dictionary) -> void:
+	_clear_overlay()
+	_last_run_record = record.duplicate(true)
+	_last_run_outcome = outcome
+	var overlay: Control = GameOverMenuScene.instantiate()
+	_overlay_scene = overlay
+	_mount_overlay(overlay)
+	get_tree().paused = true
+	if overlay.has_method("set_record"):
+		overlay.set_record(_last_run_record)
+	elif overlay.has_method("set_run_summary"):
+		var score := int(_last_run_record.get("score", 0))
+		var waves := int(_last_run_record.get("waves_survived", 0))
+		var kills := int(_last_run_record.get("enemies_killed", 0))
+		var time_seconds := int(_last_run_record.get("survival_time_seconds", 0))
+		overlay.set_run_summary(score, waves, kills, time_seconds, outcome)
+	if overlay.has_signal("retry_requested"):
+		overlay.connect("retry_requested", Callable(self, "_on_game_over_retry_requested"))
+	if overlay.has_signal("character_select_requested"):
+		overlay.connect("character_select_requested", Callable(self, "_on_game_over_character_requested"))
+	if overlay.has_signal("settings_requested"):
+		overlay.connect("settings_requested", Callable(self, "_on_game_over_settings_requested"))
+	if overlay.has_signal("main_menu_requested"):
+		overlay.connect("main_menu_requested", Callable(self, "_on_game_over_menu_requested"))
+
+func _on_world_run_ended(outcome: String, record: Dictionary) -> void:
+	_show_game_over_overlay(outcome, record)
+
+func _on_game_over_retry_requested() -> void:
+	_clear_overlay(true)
+	if _state_service.get_state() == "gameplay":
+		_match_state("gameplay")
+	else:
+		change_state("gameplay")
+
+func _on_game_over_character_requested() -> void:
+	_clear_overlay(true)
+	change_state("character_select")
+
+func _on_game_over_settings_requested() -> void:
+	_show_settings_overlay(false, true)
+
+func _on_game_over_menu_requested() -> void:
+	_clear_overlay(true)
+	change_state("menu")
 
 func _initialize_character_roster() -> void:
 	if CharacterRosterResource:
@@ -496,16 +601,20 @@ func _initialize_character_roster() -> void:
 		}
 
 func _configure_main_menu_scene(scene: Node) -> void:
+	_ensure_music("main_menu")
 	if scene.has_signal("start_game_requested"):
 		scene.connect("start_game_requested", Callable(self, "_on_start_game_requested"))
 	if scene.has_signal("settings_requested"):
 		scene.connect("settings_requested", Callable(self, "_on_settings_requested"))
+	if scene.has_signal("leaderboards_requested"):
+		scene.connect("leaderboards_requested", Callable(self, "_on_leaderboards_requested"))
 	if scene.has_signal("achievements_requested"):
 		scene.connect("achievements_requested", Callable(self, "_on_achievements_requested"))
 	if scene.has_method("set_last_selected_character") and _selected_character:
 		scene.set_last_selected_character(_selected_character)
 
 func _configure_character_select_scene(scene: Node) -> void:
+	_ensure_music("character_select")
 	if scene.has_signal("character_confirmed"):
 		scene.connect("character_confirmed", Callable(self, "_on_character_confirmed"))
 	if scene.has_signal("back_requested"):
@@ -528,6 +637,8 @@ func _configure_world_scene(scene: Node) -> void:
 		scene.connect("exit_to_menu_requested", Callable(self, "_on_exit_to_menu_requested"))
 	if scene.has_signal("pause_requested"):
 		scene.connect("pause_requested", Callable(self, "_on_pause_requested"))
+	if scene.has_signal("run_ended"):
+		scene.connect("run_ended", Callable(self, "_on_world_run_ended"))
 	if _achievement_service:
 		_achievement_service.reset_run_stats()
 	var profile: Resource = _ensure_selected_character()
@@ -540,6 +651,21 @@ func _configure_world_scene(scene: Node) -> void:
 		var env_seed: int = int(mission_config.get("environment_seed", 0))
 		if biome_id != StringName("") or time_id != StringName("") or env_seed > 0:
 			scene.set_environment_profile(biome_id, time_id, env_seed)
+
+func _ensure_music(track_name: StringName) -> void:
+	if _audio_director == null:
+		return
+	var desired_path := ""
+	var track_key := String(track_name).to_lower()
+	if typeof(_audio_director.MUSIC_TRACKS) == TYPE_DICTIONARY:
+		desired_path = String(_audio_director.MUSIC_TRACKS.get(track_key, ""))
+	var current_path := ""
+	if _audio_director.has_method("get_current_music_path"):
+		current_path = _audio_director.get_current_music_path()
+	if desired_path != "" and current_path == desired_path:
+		return
+	if _audio_director.has_method("play_music_by_name"):
+		_audio_director.play_music_by_name(track_name)
 
 func _ensure_selected_character():
 	if _selected_character:

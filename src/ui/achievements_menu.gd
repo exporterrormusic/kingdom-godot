@@ -175,7 +175,7 @@ func _create_character_entry(info: Dictionary) -> Dictionary:
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical = Control.SIZE_FILL
 	button.add_theme_constant_override("content_margin_left", 16)
-	button.add_theme_constant_override("content_margin_right", 0)
+	button.add_theme_constant_override("content_margin_right", 16)
 	button.add_theme_constant_override("content_margin_top", 8)
 	button.add_theme_constant_override("content_margin_bottom", 8)
 	_apply_character_button_styles(button)
@@ -240,6 +240,7 @@ func _create_character_entry(info: Dictionary) -> Dictionary:
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spacer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	spacer.custom_minimum_size = Vector2(0, 0)
 	layout.add_child(spacer)
 
 	var name_label := Label.new()
@@ -258,6 +259,7 @@ func _create_character_entry(info: Dictionary) -> Dictionary:
 	var count_wrapper := MarginContainer.new()
 	count_wrapper.size_flags_horizontal = Control.SIZE_SHRINK_END
 	count_wrapper.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	count_wrapper.size_flags_horizontal = Control.SIZE_SHRINK_END
 	count_wrapper.add_theme_constant_override("margin_left", 8)
 	count_wrapper.add_theme_constant_override("margin_right", 0)
 	count_wrapper.add_theme_constant_override("margin_top", 4)
@@ -266,16 +268,11 @@ func _create_character_entry(info: Dictionary) -> Dictionary:
 
 	var count_panel := Panel.new()
 	count_panel.custom_minimum_size = Vector2(148, 0)
-	count_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	count_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	count_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	count_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	count_panel.add_theme_stylebox_override("panel", _make_count_style())
 	count_wrapper.add_child(count_panel)
-
-	var count_center := CenterContainer.new()
-	count_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	count_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	count_panel.add_child(count_center)
 
 	var count_label := Label.new()
 	count_label.text = "0/0"
@@ -289,7 +286,15 @@ func _create_character_entry(info: Dictionary) -> Dictionary:
 	count_label.clip_text = false
 	count_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	count_label.grow_vertical = Control.GROW_DIRECTION_BOTH
-	count_center.add_child(count_label)
+	count_label.anchor_left = 0.0
+	count_label.anchor_right = 1.0
+	count_label.anchor_top = 0.0
+	count_label.anchor_bottom = 1.0
+	count_label.offset_left = 0.0
+	count_label.offset_right = 0.0
+	count_label.offset_top = 0.0
+	count_label.offset_bottom = 0.0
+	count_panel.add_child(count_label)
 
 	var code := String(info.get("code", GENERAL_FILTER))
 	button.set_meta("code", code)
@@ -297,12 +302,23 @@ func _create_character_entry(info: Dictionary) -> Dictionary:
 	entry_wrapper.add_child(button)
 	_character_list.add_child(entry_wrapper)
 
-	return {
+	var entry := {
 		"code": code,
 		"display": String(info.get("display", code)),
 		"button": button,
-		"count_label": count_label
+		"count_label": count_label,
+		"layout": layout,
+		"portrait_slot": portrait_slot,
+		"text_column": text_column,
+		"spacer": spacer,
+		"count_wrapper": count_wrapper
 	}
+
+	if not button.resized.is_connected(Callable(self, "_on_entry_resized")):
+		button.resized.connect(Callable(self, "_on_entry_resized").bind(entry))
+	call_deferred("_update_entry_spacer", entry)
+
+	return entry
 
 func _make_portrait_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -564,6 +580,42 @@ func _update_character_counts() -> void:
 		var code := String(entry.get("code"))
 		var counts := _calculate_counts_for(code)
 		count_label.text = "%d/%d" % [counts.get("unlocked", 0), counts.get("total", 0)]
+	call_deferred("_refresh_entry_spacers")
+
+func _on_entry_resized(entry: Dictionary) -> void:
+	_update_entry_spacer(entry)
+
+func _refresh_entry_spacers() -> void:
+	for entry in _character_entries:
+		_update_entry_spacer(entry)
+
+func _update_entry_spacer(entry: Dictionary) -> void:
+	if entry.is_empty():
+		return
+	var button: Button = entry.get("button")
+	var layout: HBoxContainer = entry.get("layout")
+	var portrait_slot: Control = entry.get("portrait_slot")
+	var text_column: Control = entry.get("text_column")
+	var spacer: Control = entry.get("spacer")
+	var count_wrapper: Control = entry.get("count_wrapper")
+	if not (is_instance_valid(button) and is_instance_valid(layout) and is_instance_valid(portrait_slot) and is_instance_valid(text_column) and is_instance_valid(spacer) and is_instance_valid(count_wrapper)):
+		return
+	var button_width := button.size.x
+	if button_width <= 0.0:
+		return
+	var content_margin_left := button.get_theme_constant("content_margin_left") if button.has_theme_constant("content_margin_left") else 0
+	var content_margin_right := button.get_theme_constant("content_margin_right") if button.has_theme_constant("content_margin_right") else 0
+	var available := button_width - float(content_margin_left + content_margin_right)
+	if available <= 0.0:
+		spacer.custom_minimum_size = Vector2.ZERO
+		return
+	var separation := layout.get_theme_constant("separation") if layout.has_theme_constant("separation") else 0
+	var separation_total := float(max(0, layout.get_child_count() - 1)) * float(separation)
+	available -= float(separation_total)
+	available -= portrait_slot.get_combined_minimum_size().x
+	available -= text_column.get_combined_minimum_size().x
+	available -= count_wrapper.get_combined_minimum_size().x
+	spacer.custom_minimum_size = Vector2(max(0.0, available), spacer.custom_minimum_size.y)
 
 func _calculate_counts_for(filter_code: String) -> Dictionary:
 	var defs := _filter_definitions_for(filter_code)

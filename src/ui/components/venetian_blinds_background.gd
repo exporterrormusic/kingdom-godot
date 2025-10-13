@@ -201,8 +201,11 @@ func _create_prepared_texture(original: Texture2D, blind_width: int, angle_offse
 		var fallback_empty: Dictionary = _make_texture_entry(original)
 		_prepared_cache[cache_key] = fallback_empty
 		return fallback_empty
-	var target_width: int = max(1, blind_width + abs(angle_offset))
-	var scale_factor: float = float(target_height) / float(original_size.y)
+	var effective_width: int = max(1, blind_width + abs(angle_offset))
+	var target_width: int = effective_width
+	var scale_x: float = float(effective_width) / float(original_size.x)
+	var scale_y: float = float(target_height) / float(original_size.y)
+	var scale_factor: float = max(scale_x, scale_y)
 	if scale_factor <= 0.0:
 		scale_factor = 1.0
 	var scaled_width: int = max(1, int(round(original_size.x * scale_factor)))
@@ -210,45 +213,8 @@ func _create_prepared_texture(original: Texture2D, blind_width: int, angle_offse
 	image.resize(scaled_width, scaled_height, Image.INTERPOLATE_LANCZOS)
 	var final_image = Image.create(target_width, target_height, false, image.get_format())
 	final_image.fill(Color(0, 0, 0, 0))
-	var src_width: int = min(scaled_width, blind_width + angle_offset)
-	var crop_x: int = max(0, int(round((scaled_width - src_width) / 2.0)))
-	var src_height: int = min(scaled_height, target_height)
-	var crop_y: int = max(0, int(round((scaled_height - src_height) / 2.0)))
-	var src_rect = Rect2i(Vector2i(crop_x, crop_y), Vector2i(src_width, src_height))
-	var dest_y = int(round((target_height - src_height) / 2.0))
-	var base_dest_x: int = int(round((target_width - src_rect.size.x) / 2.0))
-	var mask_denom: int = max(src_rect.size.y - 1, 1)
-	var max_src_x: int = src_rect.position.x + src_rect.size.x
-	var horizontal_bias = int(round(angle_offset * 0.5))
-	var min_bias = -src_rect.position.x
-	var max_bias = max_src_x - src_rect.position.x - 1
-	horizontal_bias = clamp(horizontal_bias, min_bias, max_bias)
-	for row in src_rect.size.y:
-		var src_y = src_rect.position.y + row
-		var dst_y = dest_y + row
-		if dst_y < 0 or dst_y >= target_height:
-			continue
-		var relative_pos = float(row) / float(mask_denom)
-		var mask_start = int(round(float(angle_offset) * relative_pos))
-		var mask_end = mask_start + blind_width
-		var dest_x: int = base_dest_x
-		var src_x: int = src_rect.position.x + horizontal_bias
-		if dest_x < mask_start:
-			var shift: int = mask_start - dest_x
-			dest_x += shift
-			src_x += shift
-		if dest_x >= mask_end or src_x >= max_src_x:
-			continue
-		var max_dest: int = min(base_dest_x + src_rect.size.x, mask_end)
-		var copy_width: int = max_dest - dest_x
-		if copy_width <= 0:
-			continue
-		var max_copy_from_src: int = max_src_x - src_x
-		if copy_width > max_copy_from_src:
-			copy_width = max_copy_from_src
-		if copy_width <= 0:
-			continue
-		final_image.blit_rect(image, Rect2i(Vector2i(src_x, src_y), Vector2i(copy_width, 1)), Vector2i(dest_x, dst_y))
+	var dest_pos = Vector2i(int(round((target_width - scaled_width) / 2.0)), int(round((target_height - scaled_height) / 2.0)))
+	_blit_image_with_clipping(final_image, image, dest_pos)
 	var safe_width: int = max(target_width, 1)
 	var top_left_u: float = 0.0
 	var top_right_u: float = float(blind_width) / float(safe_width)
@@ -264,6 +230,36 @@ func _create_prepared_texture(original: Texture2D, blind_width: int, angle_offse
 	}
 	_prepared_cache[cache_key] = entry
 	return entry
+
+static func _blit_image_with_clipping(dest: Image, src: Image, dest_pos: Vector2i) -> void:
+	if dest == null or src == null:
+		return
+	var dest_size: Vector2i = dest.get_size()
+	var src_size: Vector2i = src.get_size()
+	if dest_size.x <= 0 or dest_size.y <= 0:
+		return
+	if src_size.x <= 0 or src_size.y <= 0:
+		return
+	for row in src_size.y:
+		var dest_y: int = dest_pos.y + row
+		if dest_y < 0 or dest_y >= dest_size.y:
+			continue
+		var dest_x: int = dest_pos.x
+		var src_x: int = 0
+		var remaining: int = src_size.x
+		if dest_x < 0:
+			var shift: int = min(-dest_x, remaining)
+			dest_x += shift
+			src_x += shift
+			remaining -= shift
+		if remaining <= 0:
+			continue
+		if dest_x >= dest_size.x:
+			continue
+		var max_copy: int = min(remaining, dest_size.x - dest_x)
+		if max_copy <= 0:
+			continue
+		dest.blit_rect(src, Rect2i(Vector2i(src_x, row), Vector2i(max_copy, 1)), Vector2i(dest_x, dest_y))
 
 static func _make_texture_entry(texture: Texture2D) -> Dictionary:
 	return {

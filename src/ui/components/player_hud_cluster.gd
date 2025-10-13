@@ -31,6 +31,8 @@ signal burst_fill_finished
 @export_range(0.0, 1.0, 0.05) var ammo_low_threshold: float = 0.2
 @export var burst_ready_badge_color: Color = Color(1.0, 0.74, 0.38, 1.0)
 @export var burst_ready_text_color: Color = Color(0.12, 0.08, 0.06, 1.0)
+@export var special_badge_color: Color = Color(0.95, 0.52, 0.16, 0.95)
+@export var special_badge_text_color: Color = Color(0.12, 0.06, 0.02, 1.0)
 
 @onready var _portrait_slot: Control = %PortraitShake
 @onready var _portrait_frame: Panel = %PortraitFrame
@@ -43,6 +45,7 @@ signal burst_fill_finished
 @onready var _hp_bar: ProgressBar = %HPBar
 @onready var _burst_bar: ProgressBar = %BurstBar
 @onready var _ammo_label: Label = %AmmoLabel
+@onready var _special_badge: ColorRect = %SpecialBadge
 @onready var _special_label: Label = %SpecialLabel
 @onready var _run_stats_label: Label = %RunStatsLabel
 @onready var _run_timer_label: Label = %RunTimerLabel
@@ -372,15 +375,15 @@ func _update_ammo_labels() -> void:
 			ammo_ratio = float(_ammo_current) / float(max(1, _ammo_max))
 		var low_ammo: bool = _ammo_max > 0 and ammo_ratio <= ammo_low_threshold
 		_ammo_label.modulate = ammo_low_text_color if low_ammo else ammo_text_color
-	if _special_label:
+	if _special_badge and _special_label:
 		if _special_max <= 0:
-			_special_label.visible = false
+			_special_badge.visible = false
 		else:
-			_special_label.visible = true
+			_special_badge.visible = true
 			_special_label.text = "SPECIAL %d/%d" % [_special_current, _special_max]
 			var special_ratio: float = float(_special_current) / float(max(1, _special_max))
 			var low_special: bool = special_ratio <= ammo_low_threshold
-			_special_label.modulate = ammo_low_text_color if low_special else ammo_text_color
+			_special_label.modulate = ammo_low_text_color if low_special else special_badge_text_color
 	_refresh_run_stats()
 
 func _refresh_run_stats() -> void:
@@ -439,6 +442,10 @@ func _apply_styles() -> void:
 		_burst_bar.add_theme_stylebox_override("fill", _create_bar_fill(burst_bar_color))
 	if _ammo_label:
 		_ammo_label.modulate = ammo_text_color
+	if _special_badge:
+		_special_badge.color = special_badge_color
+	if _special_label:
+		_special_label.modulate = special_badge_text_color
 	if _special_label:
 		_special_label.modulate = ammo_text_color
 	if _run_stats_label:

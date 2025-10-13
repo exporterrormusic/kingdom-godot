@@ -18,6 +18,25 @@ shape = SubResource(1)
 [node name="CharacterSpriteAnimator" type="AnimatedSprite2D" parent="."]
 script = ExtResource(2)
 
+[node name="BodyGlow" type="PointLight2D" parent="."]
+color = Color(1, 0.32, 0.19, 1)
+energy = 0.82
+texture_scale = 1.35
+shadow_enabled = false
+editor_only = false
+z_index = 8
+
+[node name="GroundGlow" type="PointLight2D" parent="."]
+position = Vector2(0, 28)
+scale = Vector2(1.35, 0.72)
+color = Color(1, 0.24, 0.15, 1)
+energy = 1.08
+texture_scale = 1.75
+shadow_enabled = false
+height = -18.0
+editor_only = false
+z_index = -5
+
 [node name="HealthBar" type="Node2D" parent="."]
 script = ExtResource(3)
 ```

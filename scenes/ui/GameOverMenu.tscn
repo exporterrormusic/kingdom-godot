@@ -1,0 +1,162 @@
+[gd_scene load_steps=2 format=3 uid="uid://c0taoadttbony"]
+
+[ext_resource type="Script" path="res://src/ui/game_over_menu.gd" id="1"]
+
+[node name="GameOverMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+
+[node name="Dim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.7)
+
+[node name="Panel" type="Panel" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(1040, 840)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -520.0
+offset_top = -420.0
+offset_right = 520.0
+offset_bottom = 420.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_top = 28.0
+offset_right = -28.0
+offset_bottom = -28.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="Panel/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "SURVIVAL ENDED"
+horizontal_alignment = 1
+
+[node name="OutcomeLabel" type="Label" parent="Panel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "Defeated"
+horizontal_alignment = 1
+modulate = Color(0.89, 0.63, 0.63, 1)
+
+[node name="Separator" type="HSeparator" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="StatsContainer" type="VBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="StatsTitle" type="Label" parent="Panel/VBoxContainer/StatsContainer"]
+layout_mode = 2
+text = "Run Summary"
+horizontal_alignment = 1
+
+[node name="StatsGrid" type="GridContainer" parent="Panel/VBoxContainer/StatsContainer"]
+layout_mode = 2
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 6
+columns = 2
+
+[node name="ScoreLabel" type="Label" parent="Panel/VBoxContainer/StatsContainer/StatsGrid"]
+layout_mode = 2
+text = "Score"
+
+[node name="ScoreValue" type="Label" parent="Panel/VBoxContainer/StatsContainer/StatsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0"
+horizontal_alignment = 2
+
+[node name="WaveLabel" type="Label" parent="Panel/VBoxContainer/StatsContainer/StatsGrid"]
+layout_mode = 2
+text = "Wave"
+
+[node name="WaveValue" type="Label" parent="Panel/VBoxContainer/StatsContainer/StatsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "00"
+horizontal_alignment = 2
+
+[node name="KillsLabel" type="Label" parent="Panel/VBoxContainer/StatsContainer/StatsGrid"]
+layout_mode = 2
+text = "Kills"
+
+[node name="KillsValue" type="Label" parent="Panel/VBoxContainer/StatsContainer/StatsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0"
+horizontal_alignment = 2
+
+[node name="TimeLabel" type="Label" parent="Panel/VBoxContainer/StatsContainer/StatsGrid"]
+layout_mode = 2
+text = "Time"
+
+[node name="TimeValue" type="Label" parent="Panel/VBoxContainer/StatsContainer/StatsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "00:00"
+horizontal_alignment = 2
+
+[node name="ButtonsContainer" type="VBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="RetryButton" type="Button" parent="Panel/VBoxContainer/ButtonsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Retry"
+
+[node name="CharacterButton" type="Button" parent="Panel/VBoxContainer/ButtonsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Character Select"
+
+[node name="SettingsButton" type="Button" parent="Panel/VBoxContainer/ButtonsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Settings"
+
+[node name="MenuButton" type="Button" parent="Panel/VBoxContainer/ButtonsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Main Menu"
+

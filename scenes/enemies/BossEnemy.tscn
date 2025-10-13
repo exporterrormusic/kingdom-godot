@@ -1,0 +1,44 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource path="res://src/enemies/boss_enemy.gd" type="Script" id=1]
+[ext_resource path="res://src/actors/character_sprite_animator.gd" type="Script" id=2]
+[ext_resource path="res://src/ui/overlays/enemy_health_bar.gd" type="Script" id=3]
+
+[sub_resource type="CircleShape2D" id=1]
+radius = 32.0
+
+[node name="BossEnemy" type="CharacterBody2D"]
+collision_layer = 4
+collision_mask = 2
+script = ExtResource(1)
+body_glow_intensity = 1.15
+ground_glow_intensity = 1.45
+glow_radius_multiplier = 1.8
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource(1)
+
+[node name="CharacterSpriteAnimator" type="AnimatedSprite2D" parent="."]
+script = ExtResource(2)
+
+[node name="BodyGlow" type="PointLight2D" parent="."]
+color = Color(1, 0.32, 0.19, 1)
+energy = 1.15
+texture_scale = 1.85
+shadow_enabled = false
+editor_only = false
+z_index = 10
+
+[node name="GroundGlow" type="PointLight2D" parent="."]
+position = Vector2(0, 42)
+scale = Vector2(2.05, 0.85)
+color = Color(1, 0.22, 0.13, 1)
+energy = 1.45
+texture_scale = 1.95
+shadow_enabled = false
+height = -24.0
+editor_only = false
+z_index = -5
+
+[node name="HealthBar" type="Node2D" parent="."]
+script = ExtResource(3)

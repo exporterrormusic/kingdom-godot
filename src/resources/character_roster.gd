@@ -8,6 +8,9 @@ const DEFAULT_SPRITE_COLUMNS := 3
 const DEFAULT_SPRITE_ROWS := 4
 const DEFAULT_SPRITE_SCALE := 0.2
 const DEFAULT_PROJECTILE_RADIUS := 4.0
+const LEGACY_SPEED_SCALE := 2.2
+const LEGACY_DASH_DISTANCE := 225.0
+const LEGACY_DASH_DURATION := 0.15
 
 @export var characters: Array[CharacterDataScript] = []
 @export var auto_populate_from_legacy: bool = true
@@ -142,9 +145,20 @@ func _build_character_from_config(folder_name: String, config: Dictionary) -> Ch
 	var stats_variant: Variant = config.get("stats", {})
 	if stats_variant is Dictionary:
 		var stats: Dictionary = stats_variant as Dictionary
-		character.speed_rating = _as_int(stats.get("speed", character.speed_rating), character.speed_rating)
+		var speed_raw: float = _as_float(stats.get("speed", null), -1.0)
+		if speed_raw > 0.0:
+			character.speed_rating = _as_int(speed_raw, character.speed_rating)
+			var scaled_speed: float = max(0.0, speed_raw * LEGACY_SPEED_SCALE)
+			if scaled_speed > 0.0:
+				character.move_speed = scaled_speed
 		character.hp = _as_int(stats.get("hp", character.hp), character.hp)
-		character.burst_rating = _as_int(stats.get("burst_multiplier", character.burst_rating), character.burst_rating)
+		var burst_multiplier: float = _as_float(stats.get("burst_multiplier", null), -1.0)
+		if burst_multiplier > 0.0:
+			character.burst_rating = _as_int(round(burst_multiplier), character.burst_rating)
+			character.burst_points_per_enemy = max(0.0, burst_multiplier)
+	if LEGACY_DASH_DURATION > 0.0:
+		character.dash_duration = LEGACY_DASH_DURATION
+		character.dash_speed = LEGACY_DASH_DISTANCE / LEGACY_DASH_DURATION
 
 	character.weapon_name = str(config.get("weapon_name", character.weapon_name))
 	character.weapon_type = str(config.get("weapon_type", character.weapon_type))

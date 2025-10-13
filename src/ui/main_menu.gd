@@ -109,7 +109,6 @@ func _activate_selection() -> void:
 	match option_id:
 		"LEADERBOARDS":
 			emit_signal("leaderboards_requested")
-			_show_placeholder_message("Leaderboards")
 		"ACHIEVEMENTS":
 			emit_signal("achievements_requested")
 		"SHOP":

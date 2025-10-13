@@ -137,16 +137,30 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 16
 text = "AMMO --/--"
 
-[node name="SpecialLabel" type="Label" parent="Root/BarColumn/AmmoRow"]
+[node name="SpecialBadge" type="ColorRect" parent="Root/BarColumn/AmmoRow"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 size_flags_horizontal = 2
+custom_minimum_size = Vector2(148, 24)
+color = Color(0.95, 0.52, 0.16, 0.95)
+
+[node name="SpecialLabel" type="Label" parent="Root/BarColumn/AmmoRow/SpecialBadge"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
 theme_override_font_sizes/font_size = 16
 text = "SPECIAL --/--"
-horizontal_alignment = 2
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="RunStatsLabel" type="Label" parent="Root/BarColumn/AmmoRow"]
+[node name="StatsRow" type="HBoxContainer" parent="Root/BarColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="RunStatsLabel" type="Label" parent="Root/BarColumn/StatsRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 2
@@ -154,7 +168,7 @@ theme_override_font_sizes/font_size = 16
 text = "WAVE 01 • KILLS 0"
 horizontal_alignment = 2
 
-[node name="RunTimerLabel" type="Label" parent="Root/BarColumn/AmmoRow"]
+[node name="RunTimerLabel" type="Label" parent="Root/BarColumn/StatsRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 2

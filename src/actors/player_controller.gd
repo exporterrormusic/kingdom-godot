@@ -120,6 +120,7 @@ var _minigun_initial_fire_rate := 0.0
 var _minigun_full_damage_multiplier := 1.0
 var _minigun_spin_decay_multiplier := 3.0
 var _weapon_rng := RandomNumberGenerator.new()
+var _shotgun_special_color_cache: Color = Color(1.0, 0.28, 0.08, 1.0)
 var _minigun_special_charge: float = MINIGUN_SPECIAL_CHARGE_MAX
 var _minigun_idle_time: float = 0.0
 var _minigun_cached_forward: Vector2 = Vector2.RIGHT
@@ -166,9 +167,13 @@ var _audio_director: AudioDirector = null
 @onready var _animator: CharacterSpriteAnimator = $CharacterSpriteAnimator
 @onready var _ground_accent: Node2D = $GroundAccent if has_node("GroundAccent") else null
 @onready var _underlight: PointLight2D = $GroundAccent/Underlight if has_node("GroundAccent/Underlight") else null
+@onready var _aura_light: PointLight2D = $AuraLight if has_node("AuraLight") else null
+@onready var _night_glow: PointLight2D = $GroundAccent/NightGlow if has_node("GroundAccent/NightGlow") else null
+@onready var _sprite_glow: Sprite2D = $CharacterSpriteAnimator/SpriteGlow if has_node("CharacterSpriteAnimator/SpriteGlow") else null
 @onready var _light_marker: PlayerGroundMarker = $GroundAccent/LightMarker if has_node("GroundAccent/LightMarker") else null
 @onready var _shadow_marker: PlayerGroundMarker = $GroundAccent/ShadowMarker if has_node("GroundAccent/ShadowMarker") else null
 var _ground_accent_timer: float = 0.0
+var _player_glow_texture: Texture2D = null
 
 func _ready() -> void:
 	_weapon_rng.randomize()
@@ -176,6 +181,8 @@ func _ready() -> void:
 	_audio_director = _resolve_audio_director()
 	if _animator:
 		_animator.clear()
+	var glow_texture: Texture2D = _ensure_player_glow_texture(_night_glow)
+	_configure_sprite_glow(glow_texture)
 	_original_collision_layer = collision_layer
 	_original_collision_mask = collision_mask
 	_reset_burst_effect_states()
@@ -190,19 +197,39 @@ func apply_ground_accent_profile(is_night: bool, ambient_strength: float = 1.0) 
 	_update_ground_accent_offset(true)
 
 func _configure_ground_accent_for_time(is_night: bool, ambient_strength: float) -> void:
-	if _ground_accent == null:
-		return
 	var clamped_strength := clampf(ambient_strength, 0.25, 1.6)
 	if _underlight:
-		_underlight.enabled = is_night
-		_underlight.visible = is_night
+		_underlight.enabled = true
+		_underlight.visible = true
 		if is_night:
-			var target_energy := clampf(0.3 + 0.32 * clamped_strength, 0.18, 0.78)
-			_underlight.energy = target_energy
-			_underlight.texture_scale = clampf(1.1 + 0.18 * clamped_strength, 0.8, 1.9)
+			_underlight.color = Color(0.86, 0.96, 1.0, 1.0)
+			var night_energy := clampf(0.32 + 0.34 * clamped_strength, 0.22, 0.82)
+			_underlight.energy = night_energy
+			_underlight.texture_scale = clampf(1.2 + 0.22 * clamped_strength, 1.05, 2.1)
 		else:
-			_underlight.energy = 0.0
-			_underlight.texture_scale = 1.4
+			_underlight.color = Color(0.98, 0.94, 0.78, 0.88)
+			var day_energy := clampf(0.08 + 0.1 * (1.75 - clamped_strength), 0.06, 0.24)
+			_underlight.energy = day_energy
+			_underlight.texture_scale = clampf(1.05 + 0.06 * (1.6 - clamped_strength), 0.9, 1.35)
+	if _aura_light:
+		_aura_light.enabled = true
+		_aura_light.visible = true
+		_aura_light.shadow_enabled = false
+		if is_night:
+			var aura_energy := clampf(0.52 + 0.35 * clamped_strength, 0.45, 1.05)
+			_aura_light.energy = aura_energy
+			_aura_light.texture_scale = clampf(4.2 + 1.6 * clamped_strength, 3.4, 6.2)
+			_aura_light.color = Color(0.99, 0.8, 0.56, 1.0)
+		else:
+			var aura_day_energy := clampf(0.16 + 0.12 * clamped_strength, 0.1, 0.32)
+			_aura_light.energy = aura_day_energy
+			_aura_light.texture_scale = clampf(3.3 + 0.56 * clamped_strength, 3.0, 4.8)
+			_aura_light.color = Color(0.95, 0.9, 0.74, 0.95)
+	else:
+		# Fallback: brighten underlight when aura node missing.
+		if _underlight:
+			_underlight.energy = clampf(_underlight.energy * 1.35, 0.15, 1.0)
+			_underlight.texture_scale = clampf(_underlight.texture_scale * 1.12, 0.9, 2.4)
 	if _light_marker:
 		_light_marker.visible = is_night
 		if is_night:
@@ -219,6 +246,80 @@ func _configure_ground_accent_for_time(is_night: bool, ambient_strength: float) 
 			_shadow_marker.set_scale_multiplier(Vector2(1.0 + 0.14 * (1.3 - clamped_strength), 1.0))
 	else:
 		_shadow_marker.visible = false
+	if _night_glow:
+		_night_glow.top_level = false
+		_night_glow.position = Vector2.ZERO
+		_night_glow.enabled = true
+		_night_glow.visible = true
+		var core_color := Color(1.0, 0.74, 0.48, 1.0)
+		if is_night:
+			_night_glow.color = core_color.lerp(Color(1.0, 0.74, 0.46, 1.0), 0.35)
+			_night_glow.energy = clampf(0.22 + 0.12 * clamped_strength, 0.2, 0.42)
+			_night_glow.texture_scale = clampf(1.9 + 0.45 * clamped_strength, 1.7, 2.9)
+			_night_glow.height = -28.0
+		else:
+			_night_glow.color = Color(0.98, 0.9, 0.78, 0.95)
+			_night_glow.energy = clampf(0.08 + 0.04 * (1.6 - clamped_strength), 0.06, 0.12)
+			_night_glow.texture_scale = clampf(1.1 + 0.22 * (1.6 - clamped_strength), 1.0, 1.8)
+			_night_glow.height = -24.0
+		_night_glow.shadow_enabled = false
+		if _night_glow.texture == null:
+			_ensure_player_glow_texture(_night_glow)
+	if _sprite_glow:
+		_sprite_glow.visible = true
+		if is_night:
+			_sprite_glow.modulate = Color(1.0, 0.62, 0.34, 0.26)
+			_sprite_glow.scale = Vector2(0.32, 0.28)
+		else:
+			_sprite_glow.modulate = Color(1.0, 0.8, 0.54, 0.12)
+			_sprite_glow.scale = Vector2(0.26, 0.22)
+
+
+func _create_player_glow_texture() -> Texture2D:
+	var gradient := Gradient.new()
+	gradient.colors = PackedColorArray([
+		Color(1.0, 0.9, 0.62, 0.85),
+		Color(0.98, 0.58, 0.28, 0.32),
+		Color(0.2, 0.12, 0.08, 0.08),
+		Color(0.0, 0.0, 0.0, 0.0)
+	])
+	gradient.offsets = PackedFloat32Array([0.0, 0.34, 0.65, 1.0])
+	var texture := GradientTexture2D.new()
+	texture.fill = GradientTexture2D.FILL_RADIAL
+	texture.fill_from = Vector2(0.5, 0.5)
+	texture.fill_to = Vector2(0.5, 1.0)
+	texture.width = 512
+	texture.height = 512
+	texture.use_hdr = true
+	texture.gradient = gradient
+	return texture
+
+
+func _ensure_player_glow_texture(target_light: PointLight2D) -> Texture2D:
+	if _player_glow_texture == null:
+		_player_glow_texture = _create_player_glow_texture()
+	if target_light and target_light.texture == null:
+		target_light.texture = _player_glow_texture
+	return _player_glow_texture
+
+
+func _configure_sprite_glow(glow_texture: Texture2D) -> void:
+	if _sprite_glow == null:
+		return
+	_sprite_glow.centered = true
+	_sprite_glow.position = Vector2.ZERO
+	_sprite_glow.z_index = -5
+	_sprite_glow.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	if glow_texture == null:
+		glow_texture = _player_glow_texture if _player_glow_texture != null else _create_player_glow_texture()
+	_sprite_glow.texture = glow_texture
+	var sprite_material := _sprite_glow.material
+	if not (sprite_material is CanvasItemMaterial):
+		sprite_material = CanvasItemMaterial.new()
+		_sprite_glow.material = sprite_material
+	(sprite_material as CanvasItemMaterial).blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	_sprite_glow.modulate = Color(1.0, 0.75, 0.42, 0.18)
+	_sprite_glow.scale = Vector2(0.28, 0.24)
 
 func _update_ground_accent_offset(force: bool = false) -> void:
 	if _ground_accent == null or _animator == null:
@@ -472,13 +573,16 @@ func _attempt_primary_fire() -> void:
 			overrides["per_pellet_callback"] = Callable(self, "_on_minigun_projectile_spawned")
 		elif weapon_type == "Assault Rifle":
 			overrides["color_override"] = Callable(self, "_assault_rifle_primary_color_override")
+			overrides["per_pellet_callback"] = Callable(self, "_on_assault_rifle_projectile_spawned")
 		elif weapon_type == "Sniper":
 			overrides["per_pellet_callback"] = Callable(self, "_configure_sniper_primary_projectile")
 		elif weapon_type == "SMG":
 			overrides["color_override"] = Callable(self, "_smg_primary_color_override")
+			overrides["per_pellet_callback"] = Callable(self, "_on_smg_primary_projectile_spawned")
 		elif weapon_type == "Shotgun":
 			overrides["color_override"] = Callable(self, "_shotgun_primary_color_override")
 			overrides["radius_multiplier"] = Callable(self, "_shotgun_primary_radius_multiplier")
+			overrides["per_pellet_callback"] = Callable(self, "_on_shotgun_primary_projectile_spawned")
 		_fire_projectile_salvo(projectile, direction, Callable(), {}, overrides)
 		fired = true
 	if not fired:
@@ -612,6 +716,14 @@ func _fire_smg_dual_stream(direction: Vector2, shots_to_fire: int = 2) -> int:
 		projectile.max_range = reduced_range
 		if "projectile_archetype" in projectile:
 			projectile.projectile_archetype = "smg_special"
+		if projectile is BasicProjectileScript:
+			var basic := projectile as BasicProjectileScript
+			basic.shape = "pellet"
+			basic.radius = maxf(basic.radius, maxf(_projectile_radius * 1.275, 8.3))
+			basic.trail_enabled = false
+			var dual_glow_color := _lighten_color(basic.color, 0.12).lerp(Color(1.0, 0.56, 0.26, 0.28), 0.26)
+			var dual_glow_scale := clampf(basic.radius * 0.22, 1.0, 2.0)
+			basic.configure_glow(true, dual_glow_color, 0.24, dual_glow_scale, -0.1)
 		projectile.bounce_enabled = true
 		projectile.max_bounces = max_bounce
 		projectile.bounce_range = bounce_range
@@ -644,7 +756,7 @@ func _fire_sniper_special(direction: Vector2) -> bool:
 	projectile.trail_damage = int(special_attack_data.get("trail_damage", 12))
 	var requested_trail_duration: float = float(special_attack_data.get("trail_duration", 4.0))
 	projectile.trail_duration = max(4.0, requested_trail_duration)
-	var default_trail_color := Color(0.45, 0.78, 1.0, 0.88)
+	var default_trail_color := Color(1.0, 0.62, 0.24, 0.92)
 	projectile.trail_color = _color_from_variant(special_attack_data.get("trail_color", default_trail_color), default_trail_color)
 	if projectile is BasicProjectileScript:
 		var basic := projectile as BasicProjectileScript
@@ -652,7 +764,7 @@ func _fire_sniper_special(direction: Vector2) -> bool:
 		basic.penetration = 9999
 		basic.max_range = max(basic.max_range, _projectile_range * 1.65)
 		basic.lifetime = maxf(basic.lifetime, 1.35)
-		basic.speed = basic.speed * 2.0
+		basic.speed = basic.speed * (4.0 / 3.0)
 		var thickness_multiplier := float(special_attack_data.get("thickness_multiplier", 2.0))
 		basic.radius = max(basic.radius * thickness_multiplier * 0.6666667, 0.75)
 		basic.bounce_enabled = false
@@ -660,6 +772,8 @@ func _fire_sniper_special(direction: Vector2) -> bool:
 		var glow_energy := float(special_attack_data.get("glow_energy", SNIPER_SPECIAL_GLOW_ENERGY))
 		var glow_scale := float(special_attack_data.get("glow_radius", SNIPER_GLOW_SCALE))
 		basic.configure_glow(true, glow_color, glow_energy, glow_scale, SNIPER_GLOW_HEIGHT)
+		basic.trail_width_multiplier = 2.0
+		basic.trail_color = projectile.trail_color
 	if projectile.has_method("set_direction"):
 		projectile.set_direction(direction)
 	projectile.global_position = get_gun_tip_position(direction)
@@ -694,7 +808,8 @@ func _fire_shotgun_special(direction: Vector2) -> bool:
 		blast_range = override_range
 	var origin_offset: float = float(special_attack_data.get("blast_origin_offset", 30.0))
 	var damage_multiplier: float = float(special_attack_data.get("damage_multiplier", 0.67))
-	var color: Color = _color_from_variant(special_attack_data.get("color", Color(1.0, 0.4, 0.2, 1.0)), Color(1.0, 0.4, 0.2, 1.0))
+	var color: Color = _color_from_variant(special_attack_data.get("color", Color(1.0, 0.28, 0.08, 1.0)), Color(1.0, 0.28, 0.08, 1.0))
+	_shotgun_special_color_cache = color
 	var blast_damage: int = max(1, int(round(float(_projectile_damage) * damage_multiplier)))
 	var payload: Dictionary = {
 		"blast_range": blast_range,
@@ -705,8 +820,9 @@ func _fire_shotgun_special(direction: Vector2) -> bool:
 	}
 	var overrides: Dictionary = {
 		"special_attack": true,
-		"color_override": color,
-		"radius_multiplier": 1.5
+		"color_override": Callable(self, "_shotgun_special_color_override"),
+		"radius_multiplier": 1.5,
+		"per_pellet_callback": Callable(self, "_on_shotgun_special_projectile_spawned")
 	}
 	_fire_projectile_salvo(projectile, direction, Callable(self, "_on_shotgun_special_hit"), payload, overrides)
 	if magazine_size > 0:
@@ -819,6 +935,7 @@ func _fire_projectile_salvo(
 		_apply_projectile_profile(projectile)
 		_apply_salvo_overrides(projectile, pellet_direction, idx, total_pellets, salvo_overrides)
 		if projectile is BasicProjectileScript:
+			_configure_projectile_defaults(projectile as BasicProjectileScript, idx, total_pellets)
 			_apply_marian_burst_overrides(projectile as BasicProjectileScript)
 		if get_parent() and projectile.get_parent() != get_parent():
 			get_parent().add_child(projectile)
@@ -884,6 +1001,35 @@ func _apply_salvo_overrides(
 		per_pellet_callback.call(projectile, pellet_direction, pellet_index, pellet_total)
 
 
+func _configure_projectile_defaults(projectile: BasicProjectileScript, _pellet_index: int, _pellet_total: int) -> void:
+	if projectile == null:
+		return
+	match weapon_type:
+		"Assault Rifle":
+			projectile.projectile_archetype = "assault"
+			projectile.shape = "standard"
+			var assault_radius := maxf(_projectile_radius, 8.5)
+			projectile.radius = maxf(projectile.radius * 0.9, assault_radius)
+			projectile.trail_enabled = false
+		"SMG":
+			if projectile.projectile_archetype.is_empty():
+				projectile.projectile_archetype = "smg"
+			projectile.shape = "pellet"
+			var smg_radius: float = maxf(_projectile_radius, projectile.radius)
+			projectile.radius = maxf(8.3, smg_radius * 1.275)
+			projectile.trail_enabled = false
+		"Shotgun":
+			projectile.projectile_archetype = "shotgun"
+			projectile.shape = "pellet"
+			projectile.radius = maxf(projectile.radius, maxf(_projectile_radius, 7.0))
+		"Minigun":
+			if projectile.projectile_archetype.is_empty():
+				projectile.projectile_archetype = "minigun"
+		_:
+			pass
+	projectile.call_deferred("_update_collision_shape_radius")
+
+
 func _configure_projectile_impact_callback(projectile: Node, impact_callback: Callable, impact_payload: Dictionary) -> void:
 	if projectile is BasicProjectileScript:
 		var payload := {
@@ -931,19 +1077,9 @@ func _spawn_shotgun_trail_effect(pellets: Array, forward: Vector2, visual_data: 
 	effect.global_position = global_position
 	effect.configure(pellets.duplicate(), forward, base_color, glow_color, is_special)
 
-func _spawn_shotgun_muzzle_flash(forward: Vector2, visual_data: Dictionary) -> void:
-	var parent_node := get_parent()
-	if parent_node == null:
-		return
-	var muzzle := ShotgunMuzzleFlashScript.new()
-	var base_color: Color = visual_data.get("color", _projectile_color)
-	var is_special := bool(visual_data.get("special", false))
-	muzzle.flash_radius = 86.0 if is_special else 68.0
-	muzzle.duration = 0.22 if is_special else 0.18
-	muzzle.cone_angle = clampf(spread_angle * 0.9 + 26.0, 26.0, 56.0)
-	parent_node.add_child(muzzle)
-	muzzle.global_position = global_position
-	muzzle.configure(forward, base_color)
+func _spawn_shotgun_muzzle_flash(_forward: Vector2, _visual_data: Dictionary) -> void:
+	# Muzzle flash visuals have been retired for clarity.
+	return
 
 func _spawn_shotgun_shell_ejection(forward: Vector2, visual_data: Dictionary) -> void:
 	var parent_node := get_parent()
@@ -1002,17 +1138,42 @@ func _resolve_shotgun_trail_glow(base_color: Color, is_special: bool) -> Color:
 	return glow
 
 func _shotgun_primary_color_override(pellet_index: int, pellet_total: int, _projectile: Node) -> Color:
-	var base := Color(1.0, 0.78, 0.18, 0.96)
-	var accent := Color(1.0, 0.62, 0.08, 0.92)
+	var base := Color(1.0, 0.46, 0.12, 0.94)
+	var accent := Color(1.0, 0.32, 0.06, 0.9)
 	var gradient_t := 0.5
 	if pellet_total > 1:
 		gradient_t = float(pellet_index) / float(pellet_total - 1)
 	var color := base.lerp(accent, gradient_t)
 	var jitter := (_weapon_rng.randf() - 0.5) * 0.08
-	color.r = clampf(color.r + jitter * 0.2, 0.0, 1.0)
-	color.g = clampf(color.g + jitter * 0.35, 0.0, 1.0)
-	color.b = clampf(color.b - jitter * 0.3, 0.0, 1.0)
-	color.a = 0.95
+	color.r = clampf(color.r + abs(jitter) * 0.04, 0.0, 1.0)
+	color.g = clampf(color.g - (abs(jitter) * 0.32 + 0.02), 0.0, 1.0)
+	color.b = clampf(color.b - (abs(jitter) * 0.4 + 0.01), 0.0, 1.0)
+	color.a = 0.92
+	return color
+
+func _shotgun_special_color_override(pellet_index: int, pellet_total: int, _projectile: Node) -> Color:
+	var fallback := Color(1.0, 0.26, 0.08, 0.94)
+	var base := _shotgun_special_color_cache if _shotgun_special_color_cache.a > 0.0 else fallback
+	var ember := Color(
+		clampf(base.r * 1.05, 0.0, 1.0),
+		clampf(base.g * 0.5, 0.0, 1.0),
+		clampf(base.b * 0.28, 0.0, 1.0),
+		0.96
+	)
+	var core := Color(
+		clampf(base.r * 0.96 + 0.04, 0.0, 1.0),
+		clampf(base.g * 0.3 + 0.02, 0.0, 1.0),
+		clampf(base.b * 0.2 + 0.01, 0.0, 1.0),
+		0.9
+	)
+	var gradient_t := 0.5
+	if pellet_total > 1:
+		gradient_t = float(pellet_index) / float(pellet_total - 1)
+	var color := ember.lerp(core, gradient_t)
+	var jitter := (_weapon_rng.randf() - 0.5) * 0.1
+	color.r = clampf(color.r + abs(jitter) * 0.05, 0.0, 1.0)
+	color.g = clampf(color.g - (abs(jitter) * 0.42 + 0.04), 0.0, 1.0)
+	color.b = clampf(color.b - (abs(jitter) * 0.46 + 0.02), 0.0, 1.0)
 	return color
 
 func _assault_rifle_primary_color_override(_pellet_index: int, _pellet_total: int, _projectile: Node) -> Color:
@@ -1090,24 +1251,9 @@ func _launch_rocket(direction: Vector2, is_special: bool) -> bool:
 	_spawn_muzzle_explosion(base_color, rocket.explosion_radius * (0.35 if is_special else 0.28), direction)
 	return true
 
-func _spawn_muzzle_explosion(color: Color, radius: float, direction: Vector2 = Vector2.ZERO) -> void:
-	if not get_parent():
-		return
-	var effect: ExplosionEffect = ExplosionEffectScript.new()
-	effect.radius = max(24.0, radius)
-	effect.duration = 0.2
-	effect.base_color = Color(color.r, color.g, color.b, 0.8)
-	effect.glow_color = Color(color.r, color.g, color.b, 0.6)
-	effect.core_color = Color(1.0, 0.92, 0.78, 0.85)
-	effect.shockwave_color = Color(color.r, color.g * 0.8, color.b * 0.6, 0.8)
-	effect.spark_color = Color(1.0, 0.88, 0.6, 0.85)
-	effect.spark_count = 8
-	effect.shockwave_thickness = max(8.0, radius * 0.25)
-	var spawn_offset := Vector2.ZERO
-	if direction.length() > 0.01:
-		spawn_offset = direction.normalized() * max(28.0, radius * 0.4)
-	effect.global_position = global_position + spawn_offset
-	get_parent().add_child(effect)
+func _spawn_muzzle_explosion(_color: Color, _radius: float, _direction: Vector2 = Vector2.ZERO) -> void:
+	# Universal muzzle explosions disabled to keep weapon fire clean.
+	return
 
 func _consume_ammo(amount: int = 1, force_for_shotgun: bool = false) -> void:
 	if weapon_type == "Shotgun" and not force_for_shotgun:
@@ -1299,6 +1445,67 @@ func _smg_primary_color_override(_pellet_index: int, _pellet_total: int, project
 		base_color = (projectile as BasicProjectileScript).color
 	return _lighten_color(base_color, 0.32)
 
+func _on_smg_primary_projectile_spawned(projectile: Node, _pellet_direction: Vector2, _pellet_index: int, _pellet_total: int) -> void:
+	if not (projectile is BasicProjectileScript):
+		return
+	var basic := projectile as BasicProjectileScript
+	if basic.projectile_archetype.is_empty():
+		basic.projectile_archetype = "smg"
+	basic.shape = "pellet"
+	basic.radius = maxf(basic.radius, maxf(_projectile_radius * 1.275, 8.3))
+	basic.trail_enabled = false
+	var glow_color := _lighten_color(basic.color, 0.1).lerp(Color(1.0, 0.52, 0.24, 0.26), 0.24)
+	var glow_scale := clampf(basic.radius * 0.18, 0.8, 1.6)
+	basic.configure_glow(true, glow_color, 0.18, glow_scale, -0.1)
+	basic.call_deferred("_update_collision_shape_radius")
+
+func _on_assault_rifle_projectile_spawned(projectile: Node, _pellet_direction: Vector2, _pellet_index: int, _pellet_total: int) -> void:
+	if not (projectile is BasicProjectileScript):
+		return
+	var basic := projectile as BasicProjectileScript
+	basic.projectile_archetype = "assault"
+	basic.shape = "standard"
+	var desired_radius: float = maxf(_projectile_radius, 9.0)
+	basic.radius = maxf(basic.radius, desired_radius)
+	basic.trail_enabled = false
+	basic.call_deferred("_update_collision_shape_radius")
+	basic.call_deferred("_sync_visual_state")
+
+func _on_shotgun_primary_projectile_spawned(projectile: Node, _pellet_direction: Vector2, pellet_index: int, pellet_total: int) -> void:
+	if not (projectile is BasicProjectileScript):
+		return
+	var basic := projectile as BasicProjectileScript
+	basic.projectile_archetype = "shotgun"
+	basic.shape = "pellet"
+	var spread_ratio := 0.0
+	if pellet_total > 1:
+		spread_ratio = abs(float(pellet_index) - float(pellet_total - 1) * 0.5) / float(pellet_total - 1)
+	var radius_scale := lerpf(1.1, 0.85, spread_ratio)
+	basic.radius = maxf(maxf(_projectile_radius, 7.0) * radius_scale, basic.radius)
+	basic.trail_enabled = false
+	if basic.has_method("apply_default_glow"):
+		basic.apply_default_glow()
+	basic.call_deferred("_update_collision_shape_radius")
+	basic.call_deferred("_sync_visual_state")
+
+func _on_shotgun_special_projectile_spawned(projectile: Node, _pellet_direction: Vector2, pellet_index: int, pellet_total: int) -> void:
+	if not (projectile is BasicProjectileScript):
+		return
+	var basic := projectile as BasicProjectileScript
+	basic.projectile_archetype = "shotgun_special"
+	basic.shape = "pellet"
+	var spread_ratio := 0.0
+	if pellet_total > 1:
+		spread_ratio = abs(float(pellet_index) - float(pellet_total - 1) * 0.5) / float(pellet_total - 1)
+	var base_radius := maxf(_projectile_radius * 1.35, 9.5)
+	var radius_scale := lerpf(1.18, 0.92, spread_ratio)
+	basic.radius = maxf(basic.radius, base_radius * radius_scale)
+	basic.trail_enabled = false
+	if basic.has_method("apply_default_glow"):
+		basic.apply_default_glow()
+	basic.call_deferred("_update_collision_shape_radius")
+	basic.call_deferred("_sync_visual_state")
+
 func _lighten_color(base_color: Color, amount: float) -> Color:
 	var clamped := clampf(amount, 0.0, 1.0)
 	var target_value := clampf(base_color.v + (1.0 - base_color.v) * clamped, 0.0, 1.0)
@@ -1487,7 +1694,7 @@ func _spawn_minigun_lightning_arc(start_point: Vector2, end_point: Vector2, inte
 		arc.global_position = start_point
 
 func _compute_muzzle_offset(forward: Vector2) -> Vector2:
-	var forward_distance: float = max(32.0, _projectile_radius * 7.5)
+	var forward_distance: float = max(44.0, _projectile_radius * 8.5)
 	var height_offset: Vector2 = Vector2(0.0, -12.0)
 	return forward * forward_distance + height_offset
 

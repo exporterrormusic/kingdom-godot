@@ -108,6 +108,21 @@ func _setup_visuals() -> void:
 		_burn_polygon = Polygon2D.new()
 		_burn_polygon.z_index = 60
 		add_child(_burn_polygon)
+	if _glow_line.material == null:
+		var glow_mat := CanvasItemMaterial.new()
+		glow_mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		glow_mat.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+		_glow_line.material = glow_mat
+	if _core_line.material == null:
+		var core_mat := CanvasItemMaterial.new()
+		core_mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		core_mat.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+		_core_line.material = core_mat
+	if _burn_polygon.material == null:
+		var burn_mat := CanvasItemMaterial.new()
+		burn_mat.blend_mode = CanvasItemMaterial.BLEND_MODE_MIX
+		burn_mat.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+		_burn_polygon.material = burn_mat
 	var half_length := _length * 0.5
 	_burn_polygon.polygon = PackedVector2Array([
 		Vector2(-half_length, -_half_width),
