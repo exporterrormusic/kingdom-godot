@@ -1,16 +1,34 @@
+@tool
 extends Node2D
 class_name BasicProjectileVisual
+
+const StandardBulletVisualScene: PackedScene = preload("res://scenes/projectiles/visuals/StandardBulletVisual.tscn")
+const StandardBulletVisualScript: Script = preload("res://src/projectiles/visuals/standard_bullet_visual.gd")
+
+const WeaponVisualScenePaths := {
+	"smg": "res://scenes/projectiles/visuals/weapons/SmgNormalBulletVisual.tscn",
+	"smg_special": "res://scenes/projectiles/visuals/weapons/SmgSpecialBulletVisual.tscn",
+	"minigun": "res://scenes/projectiles/visuals/weapons/MinigunBulletVisual.tscn",
+	"minigun_special": "res://scenes/projectiles/visuals/weapons/MinigunSpecialBulletVisual.tscn",
+	"assault": "res://scenes/projectiles/visuals/weapons/AssaultBulletVisual.tscn",
+	"assault_special": "res://scenes/projectiles/visuals/weapons/AssaultSpecialBulletVisual.tscn",
+	"shotgun": "res://scenes/projectiles/visuals/weapons/ShotgunPelletVisual.tscn",
+	"shotgun_special": "res://scenes/projectiles/visuals/weapons/ShotgunSpecialPelletVisual.tscn",
+	"sniper": "res://scenes/projectiles/visuals/weapons/SniperBulletVisual.tscn",
+	"sniper_special": "res://scenes/projectiles/visuals/weapons/SniperSpecialBulletVisual.tscn"
+}
 
 const BULLET_SHADER := preload("res://src/projectiles/shaders/bullet_circle.gdshader")
 const LASER_LAYER_COUNT := 3
 const LASER_CRACKLE_COUNT := 12
-const PROJECTILE_BASE_Z_INDEX := 210
+const PROJECTILE_BASE_Z_INDEX := 900
 
 static var _ambient_compensation_strength: float = 1.0
 static var _vignette_strength: float = 0.0
 static var _vignette_inner_radius: float = 0.6
 static var _vignette_softness: float = 0.4
 static var _vignette_view_size: Vector2 = Vector2.ZERO
+static var _is_day_time: bool = true
 
 var _projectile: Node = null
 static func _assign_canvas_layer(node: CanvasItem, z_offset: int = 0) -> void:
@@ -51,62 +69,74 @@ var _glow_color: Color = Color(1.0, 1.0, 1.0, 1.0)
 var _glow_energy: float = 1.0
 var _glow_scale: float = 1.0
 var _glow_height: float = 0.0
-var _standard_node: StandardBulletVisualNode = null
+var _standard_visual: Node2D = null
+var _is_editor_preview := false
+var _weapon_visual: Node2D = null
 
 func _ready() -> void:
 	_white_texture = _create_white_texture()
 	_laser_rng.randomize()
 	z_as_relative = false
 	z_index = PROJECTILE_BASE_Z_INDEX
+	_is_editor_preview = Engine.is_editor_hint()
+	if _is_editor_preview:
+		_setup_editor_preview()
 
 func setup(projectile: Node, bounce_visuals_enabled: bool) -> void:
 	_projectile = projectile
 	_bounce_visuals = bounce_visuals_enabled
 	_clear_children()
 	_setup_trail(projectile.shape.to_lower(), projectile.trail_color)
+	var weapon_visual_created: bool = _setup_weapon_visual(projectile)
 	var shape_key: String = String(projectile.shape).to_lower()
 	var use_standard := false
 	if shape_key == "" and projectile is BasicProjectile:
 		shape_key = (projectile as BasicProjectile).shape.to_lower()
-	match shape_key:
-		"tracer":
-			_is_tracer = true
-			_setup_tracer_body(projectile.color)
-		"neon":
-			_is_neon = true
-			_setup_neon_body(projectile.color)
-		"pellet":
-			_is_pellet = true
-			_setup_circle_body(projectile.color, false)
-		"laser":
-			_is_laser = true
-			_setup_laser_body(projectile.color)
-		_:
-			_is_minigun = projectile.projectile_archetype.to_lower() == "minigun"
-			use_standard = shape_key == "standard" or shape_key == ""
-			_setup_circle_body(projectile.color, use_standard)
+	if not weapon_visual_created:
+		match shape_key:
+			"tracer":
+				_is_tracer = true
+				_setup_tracer_body(projectile.color)
+			"neon":
+				_is_neon = true
+				_setup_neon_body(projectile.color)
+			"pellet":
+				_is_pellet = true
+				_setup_circle_body(projectile.color, false)
+			"laser":
+				_is_laser = true
+				_setup_laser_body(projectile.color)
+			_:
+				_is_minigun = projectile.projectile_archetype.to_lower() == "minigun"
+				use_standard = shape_key == "standard" or shape_key == ""
+				_setup_circle_body(projectile.color, use_standard)
 	if _bounce_visuals:
 		_setup_bounce_particles(projectile.color)
 	set_trail_enabled(projectile.trail_enabled)
 	_ensure_glow_sprite()
 
 func update_visual(trail_points: Array, direction: Vector2, radius: float, color: Color, has_bounced: bool) -> void:
-	if _sprite:
-		var desired_scale: float = max(radius * 1.4, 1.2)
-		_sprite.scale = Vector2.ONE * desired_scale
-		_update_circle_colors(color)
-	if _is_standard and _standard_node:
-		_standard_node.configure(color, radius)
-		if direction.length() > 0.001:
-			_standard_node.rotation = direction.angle()
-		else:
-			_standard_node.rotation = 0.0
-	if _is_tracer and _tracer_body:
-		_update_tracer_body(direction, radius, color)
-	if _is_neon:
-		_update_neon_body(direction, radius, color, has_bounced)
-	if _is_laser:
-		_update_laser_body(direction, radius, color)
+	var weapon_context: Dictionary = _collect_weapon_visual_context(has_bounced)
+	if _weapon_visual and _weapon_visual.has_method("update_visual"):
+		_weapon_visual.call("update_visual", direction, radius, color, weapon_context)
+	else:
+		if _sprite:
+			var desired_scale: float = max(radius * 1.4, 1.2)
+			_sprite.scale = Vector2.ONE * desired_scale
+			_update_circle_colors(color)
+		if _is_standard and _standard_visual:
+			if _standard_visual.has_method("configure"):
+				_standard_visual.call("configure", color, radius)
+			if direction.length() > 0.001:
+				_standard_visual.rotation = direction.angle()
+			else:
+				_standard_visual.rotation = 0.0
+		if _is_tracer and _tracer_body:
+			_update_tracer_body(direction, radius, color)
+		if _is_neon:
+			_update_neon_body(direction, radius, color, has_bounced)
+		if _is_laser:
+			_update_laser_body(direction, radius, color)
 	if _trail:
 		_update_trail(trail_points)
 	if _bounce_visuals and _bounce_particles:
@@ -134,10 +164,14 @@ func set_trail_enabled(enabled: bool) -> void:
 func _setup_circle_body(base_color: Color, use_standard_style: bool = false) -> void:
 	_is_standard = use_standard_style
 	if _is_standard:
-		_standard_node = StandardBulletVisualNode.new(self)
-		_assign_canvas_layer(_standard_node, 1)
-		add_child(_standard_node)
-		_standard_node.configure(base_color, _resolve_projectile_radius())
+		_standard_visual = _create_standard_visual()
+		if _standard_visual:
+			_assign_canvas_layer(_standard_visual, 1)
+			if _standard_visual.has_method("set_apply_color_callback"):
+				_standard_visual.call("set_apply_color_callback", Callable(self, "_apply_color"))
+			add_child(_standard_visual)
+			if _standard_visual.has_method("configure"):
+				_standard_visual.call("configure", base_color, _resolve_projectile_radius())
 		return
 	_sprite = Sprite2D.new()
 	_sprite.texture = _white_texture
@@ -153,9 +187,97 @@ func _setup_circle_body(base_color: Color, use_standard_style: bool = false) -> 
 	_assign_canvas_layer(_sprite, 1)
 	add_child(_sprite)
 
+func _setup_weapon_visual(projectile: Node) -> bool:
+	if projectile == null:
+		return false
+	var archetype_value: String = ""
+	if projectile.has_method("get"):
+		var variant: Variant = projectile.get("projectile_archetype")
+		if variant is String:
+			archetype_value = (variant as String).to_lower()
+	if archetype_value.is_empty():
+		return false
+	var is_special: bool = false
+	if projectile.has_method("get"):
+		var special_variant: Variant = projectile.get("special_attack")
+		if special_variant != null and typeof(special_variant) in [TYPE_BOOL, TYPE_INT, TYPE_FLOAT]:
+			is_special = bool(special_variant)
+	var key: String = _resolve_weapon_visual_key(archetype_value, is_special)
+	if key.is_empty():
+		return false
+	if not WeaponVisualScenePaths.has(key):
+		return false
+	var resource_path: String = WeaponVisualScenePaths.get(key, "")
+	if resource_path.is_empty():
+		return false
+	var packed_resource := load(resource_path)
+	if not (packed_resource is PackedScene):
+		return false
+	var packed_scene: PackedScene = packed_resource
+	if _white_texture == null:
+		_white_texture = _create_white_texture()
+	var visual_instance: Node = packed_scene.instantiate()
+	if not (visual_instance is Node2D):
+		visual_instance.queue_free()
+		return false
+	_weapon_visual = visual_instance as Node2D
+	_assign_canvas_layer(_weapon_visual, 1)
+	if _weapon_visual.has_method("set_apply_color_callback"):
+		_weapon_visual.call("set_apply_color_callback", Callable(self, "_apply_color"))
+	if _weapon_visual.has_method("set_white_texture"):
+		_weapon_visual.call("set_white_texture", _white_texture)
+	add_child(_weapon_visual)
+	var base_color: Color = Color(1.0, 1.0, 1.0, 1.0)
+	if projectile.has_method("get"):
+		var color_variant: Variant = projectile.get("color")
+		if color_variant is Color:
+			base_color = color_variant
+	if _weapon_visual.has_method("configure_visual"):
+		_weapon_visual.call("configure_visual", {
+			"direction": Vector2.RIGHT,
+			"radius": _resolve_projectile_radius(),
+			"color": base_color,
+			"context": {
+				"special_attack": is_special,
+				"archetype": archetype_value
+			}
+		})
+	return true
+
+func _resolve_weapon_visual_key(archetype: String, is_special: bool) -> String:
+	var lower := archetype.to_lower()
+	if is_special:
+		var special_key := lower + "_special"
+		if WeaponVisualScenePaths.has(special_key):
+			return special_key
+	if WeaponVisualScenePaths.has(lower):
+		return lower
+	return ""
+
+func _collect_weapon_visual_context(has_bounced: bool) -> Dictionary:
+	var context := {}
+	context["has_bounced"] = has_bounced
+	var special := false
+	var archetype := ""
+	var speed := 0.0
+	if _projectile and is_instance_valid(_projectile) and _projectile.has_method("get"):
+		var special_variant: Variant = _projectile.get("special_attack")
+		if special_variant != null and typeof(special_variant) in [TYPE_BOOL, TYPE_FLOAT, TYPE_INT]:
+			special = bool(special_variant)
+		var archetype_variant: Variant = _projectile.get("projectile_archetype")
+		if archetype_variant is String:
+			archetype = (archetype_variant as String).to_lower()
+		var speed_variant: Variant = _projectile.get("speed")
+		if typeof(speed_variant) in [TYPE_FLOAT, TYPE_INT]:
+			speed = float(speed_variant)
+	context["special_attack"] = special
+	context["archetype"] = archetype
+	context["speed"] = speed
+	return context
+
 func _update_circle_colors(color: Color) -> void:
-	if _is_standard and _standard_node:
-		_standard_node.configure(color, _resolve_projectile_radius())
+	if _is_standard and _standard_visual and _standard_visual.has_method("configure"):
+		_standard_visual.call("configure", color, _resolve_projectile_radius())
 		return
 	if _sprite == null:
 		return
@@ -167,6 +289,9 @@ func _update_circle_colors(color: Color) -> void:
 
 static func set_ambient_compensation(strength: float) -> void:
 	_ambient_compensation_strength = clampf(strength, 1.0, 4.0)
+
+static func set_time_of_day(is_day: bool) -> void:
+	_is_day_time = is_day
 
 static func set_vignette_profile(strength: float, inner_radius: float, softness: float, view_size: Vector2) -> void:
 	_vignette_strength = clampf(strength, 0.0, 1.0)
@@ -650,7 +775,7 @@ func _clear_children() -> void:
 	_is_laser = false
 	_is_pellet = false
 	_is_standard = false
-	_standard_node = null
+	_standard_visual = null
 	_is_minigun = false
 	_trail_enabled = false
 	_glow_enabled = false
@@ -658,6 +783,31 @@ func _clear_children() -> void:
 	_glow_energy = 1.0
 	_glow_scale = 1.0
 	_glow_height = 0.0
+	_weapon_visual = null
+
+
+func _setup_editor_preview() -> void:
+	_clear_children()
+	var preview_color := Color(1.0, 0.88, 0.3, 1.0)
+	_setup_circle_body(preview_color, true)
+	_ensure_glow_sprite()
+	configure_glow(true, Color(1.0, 0.78, 0.35, 0.7), 1.1, 1.0, 0.0)
+	if _standard_visual and _standard_visual.has_method("configure"):
+		_standard_visual.call("configure", preview_color, 6.0)
+
+
+func _create_standard_visual() -> Node2D:
+	if StandardBulletVisualScene:
+		var instance: Node = StandardBulletVisualScene.instantiate()
+		if instance is Node2D:
+			return instance as Node2D
+		instance.queue_free()
+	if StandardBulletVisualScript:
+		var fallback: Node = StandardBulletVisualScript.new()
+		if fallback is Node2D:
+			return fallback
+	return null
+
 func _resolve_projectile_radius() -> float:
 	if _projectile == null:
 		return 4.0
@@ -667,62 +817,6 @@ func _resolve_projectile_radius() -> float:
 			return max(0.5, float(variant))
 	return 4.0
 
-class StandardBulletVisualNode:
-	extends Node2D
-
-	var _owner_visual: BasicProjectileVisual
-	var _base_color: Color = Color(1.0, 0.9, 0.4, 1.0)
-	var _radius: float = 4.0
-
-	func _init(owner_visual: BasicProjectileVisual) -> void:
-		_owner_visual = owner_visual
-
-	func configure(color: Color, radius_value: float) -> void:
-		_base_color = color
-		_radius = max(0.5, radius_value)
-		queue_redraw()
-
-	func _blend(base_color: Color, target: Color, weight: float) -> Color:
-		var inv := clampf(1.0 - weight, 0.0, 1.0)
-		var w := clampf(weight, 0.0, 1.0)
-		return Color(
-			maxf(base_color.r * inv + target.r * w, 0.0),
-			maxf(base_color.g * inv + target.g * w, 0.0),
-			maxf(base_color.b * inv + target.b * w, 0.0),
-			1.0
-		)
-
-	func _draw() -> void:
-		if _owner_visual == null:
-			return
-		var compensated_base := _owner_visual._apply_color(_base_color)
-		var base_radius: float = max(_radius, 0.5)
-		var half_width: float = max(base_radius * 0.8, 1.2)
-		var body_length: float = max(base_radius * 3.4, half_width * 3.1)
-		var outline_thickness: float = max(base_radius * 0.28, 1.4)
-		var base_start: float = -body_length * 0.5
-		var nose_start: float = base_start + (body_length - half_width)
-		var outer_half_width: float = half_width + outline_thickness
-		var fill_target := _owner_visual._apply_color(Color(1.0, 0.94, 0.25, 1.0))
-		var fill_color: Color = _blend(compensated_base, fill_target, 0.55)
-		var outline_color: Color = _owner_visual._apply_color(Color(1.0, 0.62, 0.18, 1.0))
-		var tip_center: Vector2 = Vector2(nose_start, 0.0)
-		var tail_rect := Rect2(Vector2(base_start, -outer_half_width), Vector2(body_length - half_width, outer_half_width * 2.0))
-		draw_rect(tail_rect, outline_color)
-		draw_circle(tip_center, outer_half_width, outline_color)
-		var inner_tail_start: float = base_start + outline_thickness
-		var inner_tail_rect_length: float = max(tail_rect.size.x - outline_thickness * 1.6, 0.0)
-		var inner_tail_rect := Rect2(Vector2(inner_tail_start, -half_width), Vector2(inner_tail_rect_length, half_width * 2.0))
-		draw_rect(inner_tail_rect, fill_color)
-		draw_circle(Vector2(inner_tail_start + inner_tail_rect_length, 0.0), half_width, fill_color)
-		var tip_highlight_width: float = half_width * 0.6
-		var highlight_offset: Vector2 = Vector2(inner_tail_start + inner_tail_rect_length - tip_highlight_width * 0.3, -half_width * 0.45)
-		var highlight_rect := Rect2(highlight_offset, Vector2(tip_highlight_width, half_width * 0.9))
-		draw_rect(highlight_rect, _owner_visual._apply_color(Color(1.0, 1.0, 0.85, 0.6)))
-		var tail_core_height: float = half_width * 1.3
-		var tail_core_rect := Rect2(Vector2(base_start, -tail_core_height * 0.5), Vector2(outline_thickness * 1.8, tail_core_height))
-		var tail_target := _owner_visual._apply_color(Color(0.95, 0.78, 0.18, 1.0))
-		draw_rect(tail_core_rect, _blend(compensated_base, tail_target, 0.4))
 
 func _create_white_texture() -> Texture2D:
 	var img := Image.create(2, 2, false, Image.FORMAT_RGBA8)
@@ -806,11 +900,22 @@ func _update_glow_visual(direction: Vector2, radius: float) -> void:
 		var beam_length: float = max(radius * length_multiplier, min_length)
 		_update_glow_position_for_laser(dir, beam_length, max(radius * 4.0, 10.0))
 	else:
-		_glow_sprite.position = Vector2(0.0, -_glow_height)
 		var base_radius: float = max(radius * 1.6, 6.0)
-		var scaled: float = max(_glow_scale * base_radius * 0.1, 0.05)
-		_glow_sprite.scale = Vector2.ONE * scaled
-		_glow_sprite.rotation = 0.0
+		var offset := Vector2(0.0, -_glow_height)
+		if _is_tracer or _is_minigun:
+			var dir := direction.normalized()
+			if dir == Vector2.ZERO:
+				dir = Vector2.RIGHT
+			var length_scale := maxf(_glow_scale * base_radius * 0.12, 0.12)
+			var width_scale := maxf(_glow_scale * base_radius * 0.05, 0.06)
+			_glow_sprite.scale = Vector2(width_scale, length_scale)
+			_glow_sprite.rotation = dir.angle()
+			_glow_sprite.position = offset + dir * (base_radius * 0.18)
+		else:
+			var uniform_scale := maxf(_glow_scale * base_radius * 0.1, 0.05)
+			_glow_sprite.scale = Vector2.ONE * uniform_scale
+			_glow_sprite.rotation = 0.0
+			_glow_sprite.position = offset
 
 func _update_glow_position_for_laser(dir: Vector2, beam_length: float, beam_width: float) -> void:
 	if _glow_sprite == null or not _glow_enabled:

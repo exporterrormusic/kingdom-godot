@@ -35,6 +35,12 @@ class_name BiomeDefinition
 @export_range(0.0, 2.0, 0.01) var snow_sparkle_intensity: float = 0.2
 @export_range(0.0, 2.0, 0.01) var snowfall_density: float = 0.0
 @export_range(0.25, 4.0, 0.01) var snowfall_scale: float = 1.0
+@export_range(0.0, 1.0, 0.01) var sakura_petal_density: float = 0.0
+@export_range(0.25, 4.0, 0.01) var sakura_petal_scale: float = 1.0
+@export var sakura_primary_color: Color = Color(1.0, 0.78, 0.86, 0.85)
+@export var sakura_secondary_color: Color = Color(1.0, 0.62, 0.8, 0.65)
+@export_range(0.0, 2.0, 0.01) var sakura_fall_speed: float = 0.85
+@export_range(0.0, 1.0, 0.01) var sakura_twinkle_strength: float = 0.35
 
 func has_decorations() -> bool:
 	return decoration_textures.size() > 0 and decoration_count > 0

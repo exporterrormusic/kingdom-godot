@@ -17,8 +17,10 @@ const BasicProjectileScene := preload("res://scenes/projectiles/BasicProjectile.
 const CharacterDataScript := preload("res://src/resources/character_data.gd")
 const BasicProjectileScript := preload("res://src/projectiles/basic_projectile.gd")
 const ExplosiveProjectileScript := preload("res://src/projectiles/explosive_projectile.gd")
+const BeamAttackScene: PackedScene = preload("res://scenes/effects/BeamAttack.tscn")
 const BeamAttackScript := preload("res://src/effects/beam_attack.gd")
-const ExplosionEffectScript := preload("res://src/effects/explosion_effect.gd")
+const ExplosionEffectScene := preload("res://scenes/effects/ExplosionEffect.tscn")
+const GroundFireScene: PackedScene = preload("res://scenes/effects/GroundFire.tscn")
 const GroundFireScript := preload("res://src/effects/ground_fire.gd")
 const SwordSparkleScript := preload("res://src/effects/sword_sparkle.gd")
 const SwordSlashScript := preload("res://src/effects/sword_slash.gd")
@@ -29,12 +31,14 @@ const CecilStunEffectScript := preload("res://src/effects/cecil_stun_effect.gd")
 const SnowWhiteBurstBeamScript := preload("res://src/effects/snow_white_burst_beam.gd")
 const SnowWhiteLingeringEffectScript := preload("res://src/effects/snow_white_lingering_effect.gd")
 const ShotgunVBlastEffectScript := preload("res://src/effects/shotgun_v_blast_effect.gd")
+const ShotgunTrailEffectScene: PackedScene = preload("res://scenes/effects/ShotgunTrailEffect.tscn")
 const ShotgunTrailEffectScript := preload("res://src/effects/shotgun_trail_effect.gd")
-const ShotgunMuzzleFlashScript := preload("res://src/effects/shotgun_muzzle_flash.gd")
 const ShotgunShellCasingScript := preload("res://src/effects/shotgun_shell_casing.gd")
-const AssaultRifleMuzzleFlashScript := preload("res://src/effects/assault_rifle_muzzle_flash.gd")
 const AssaultRifleShellCasingScript := preload("res://src/effects/assault_rifle_shell_casing.gd")
+const MinigunLightningArcScene: PackedScene = preload("res://scenes/effects/MinigunLightningArc.tscn")
 const MinigunLightningArcScript := preload("res://src/effects/minigun_lightning_arc.gd")
+const PLAYER_GLOW_Z_INDEX := 905
+const MUZZLE_VERTICAL_OFFSET := 3.0
 const SNIPER_PRIMARY_SPEED_CAP := 3600.0
 const SNIPER_GLOW_COLOR := Color(0.82, 0.98, 1.0, 1.0)
 const SNIPER_PRIMARY_GLOW_ENERGY := 4.1
@@ -308,7 +312,7 @@ func _configure_sprite_glow(glow_texture: Texture2D) -> void:
 		return
 	_sprite_glow.centered = true
 	_sprite_glow.position = Vector2.ZERO
-	_sprite_glow.z_index = -5
+	_sprite_glow.z_index = PLAYER_GLOW_Z_INDEX
 	_sprite_glow.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	if glow_texture == null:
 		glow_texture = _player_glow_texture if _player_glow_texture != null else _create_player_glow_texture()
@@ -413,7 +417,7 @@ func _perform_scarlet_teleport() -> void:
 	velocity = Vector2.ZERO
 	if not get_parent():
 		return
-	var effect := ExplosionEffectScript.new()
+	var effect: ExplosionEffect = _create_explosion_effect()
 	effect.radius = 170.0
 	effect.duration = 0.35
 	effect.base_color = SCARLET_TELEPORT_EFFECT_COLOR
@@ -422,6 +426,59 @@ func _perform_scarlet_teleport() -> void:
 	effect.shockwave_color = Color(1.0, 0.7, 1.0, 0.85)
 	get_parent().add_child(effect)
 	effect.global_position = destination
+
+
+func _create_explosion_effect() -> ExplosionEffect:
+	if ExplosionEffectScene:
+		var instance := ExplosionEffectScene.instantiate()
+		if instance is ExplosionEffect:
+			return instance as ExplosionEffect
+		instance.queue_free()
+	return ExplosionEffect.new()
+
+
+func _create_shotgun_trail_effect() -> ShotgunTrailEffect:
+	if ShotgunTrailEffectScene:
+		var instance: Node = ShotgunTrailEffectScene.instantiate()
+		if instance is ShotgunTrailEffect:
+			return instance as ShotgunTrailEffect
+		instance.queue_free()
+	if ShotgunTrailEffectScript:
+		return ShotgunTrailEffectScript.new()
+	return null
+
+
+func _create_ground_fire() -> GroundFire:
+	if GroundFireScene:
+		var instance: Node = GroundFireScene.instantiate()
+		if instance is GroundFire:
+			return instance as GroundFire
+		instance.queue_free()
+	if GroundFireScript:
+		return GroundFireScript.new()
+	return null
+
+
+func _create_minigun_lightning_arc() -> MinigunLightningArc:
+	if MinigunLightningArcScene:
+		var instance: Node = MinigunLightningArcScene.instantiate()
+		if instance is MinigunLightningArc:
+			return instance as MinigunLightningArc
+		instance.queue_free()
+	if MinigunLightningArcScript:
+		return MinigunLightningArcScript.new()
+	return null
+
+
+func _create_beam_attack() -> BeamAttack:
+	if BeamAttackScene:
+		var instance: Node = BeamAttackScene.instantiate()
+		if instance is BeamAttack:
+			return instance as BeamAttack
+		instance.queue_free()
+	if BeamAttackScript:
+		return BeamAttackScript.new()
+	return null
 
 
 func set_world_bounds(bounds: Rect2) -> void:
@@ -650,27 +707,50 @@ func _resolve_secondary_cooldown() -> float:
 func _fire_assault_rifle_grenade(direction: Vector2) -> bool:
 	if grenade_rounds <= 0:
 		return false
-	var grenade := ExplosiveProjectileScript.new()
+	var grenade := BasicProjectileScene.instantiate()
+	_apply_projectile_profile(grenade)
 	var grenade_config: Dictionary = special_mechanics.get("grenade_launcher", {})
-	grenade.direction = direction
-	grenade.speed = float(grenade_config.get("projectile_speed", 600.0))
-	grenade.lifetime = 3.0
-	grenade.max_flight_time = 5.0
+	var forward := _resolve_weapon_forward(direction)
+	if forward.length_squared() == 0.0:
+		forward = Vector2.RIGHT
+	if grenade.has_method("set_direction"):
+		grenade.set_direction(forward)
+	var configured_speed := float(grenade_config.get("projectile_speed", max(400.0, _projectile_speed * 0.8)))
+	grenade.speed = configured_speed
+	grenade.lifetime = float(grenade_config.get("lifetime", 3.0))
+	grenade.max_range = float(grenade_config.get("max_range", _projectile_range * 1.2))
 	grenade.damage = int(grenade_config.get("damage", _projectile_damage * 2))
-	grenade.explosion_damage = grenade.damage
-	grenade.explosion_radius = float(grenade_config.get("explosion_radius", 120.0))
-	grenade.explosion_color = _color_from_variant(grenade_config.get("projectile_color", Color(1.0, 0.5, 0.2, 0.8)), Color(1.0, 0.5, 0.2, 0.8))
-	grenade.owner_node = self
-	grenade.render_style = "grenade"
-	grenade.special_attack = false
-	grenade.trail_enabled = false
+	var explosion_radius := float(grenade_config.get("explosion_radius", 180.0))
+	var explosion_damage := int(grenade_config.get("explosion_damage", grenade.damage))
+	var explosion_color := _color_from_variant(grenade_config.get("projectile_color", Color(1.0, 0.5, 0.2, 0.8)), Color(1.0, 0.5, 0.2, 0.8))
 	var explode_on_target := bool(grenade_config.get("explode_at_target", true))
-	grenade.explode_at_target = explode_on_target
-	grenade.target_position = get_global_mouse_position() if explode_on_target else Vector2.ZERO
-	grenade.global_position = global_position
+	var target_position := get_global_mouse_position() if explode_on_target else Vector2.ZERO
+	if explode_on_target and target_position != Vector2.ZERO:
+		grenade.max_range = max(32.0, global_position.distance_to(target_position))
+	if grenade.has_method("set_owner_reference"):
+		grenade.set_owner_reference(self)
+	if grenade is BasicProjectileScript:
+		var basic := grenade as BasicProjectileScript
+		basic.projectile_archetype = "assault_special"
+		basic.special_attack = true
+		basic.trail_enabled = false
+		basic.bounce_enabled = false
+		basic.penetration = 1
+	var spawn_origin := global_position + _compute_muzzle_offset(forward)
+	grenade.global_position = spawn_origin
+	var payload := {
+		"explosion_damage": explosion_damage,
+		"explosion_radius": explosion_radius,
+		"explosion_color": explosion_color,
+		"explode_at_target": explode_on_target,
+		"target_position": target_position
+	}
+	grenade.set_meta("_grenade_payload", payload)
+	grenade.set_meta("_grenade_exploded", false)
+	grenade.set_impact_callback(Callable(self, "_on_grenade_impact"), payload)
 	if get_parent():
 		get_parent().add_child(grenade)
-	_spawn_muzzle_explosion(grenade.explosion_color, grenade.explosion_radius * 0.35, direction)
+		grenade.tree_exiting.connect(Callable(self, "_on_grenade_retired").bind(grenade), CONNECT_ONE_SHOT)
 	grenade_rounds = max(0, grenade_rounds - 1)
 	if grenade_reload_time > 0.0 and grenade_rounds < _max_grenade_rounds:
 		_grenade_reload_timer = grenade_reload_time
@@ -708,6 +788,12 @@ func _fire_smg_dual_stream(direction: Vector2, shots_to_fire: int = 2) -> int:
 	if offset_signs.is_empty():
 		return 0
 	var shots_spawned := 0
+	var parent := get_parent()
+	var forward := _resolve_weapon_forward(direction)
+	if forward.length_squared() == 0.0:
+		forward = Vector2.RIGHT
+	var muzzle_origin := global_position + _compute_muzzle_offset(forward)
+	var perpendicular_basis := Vector2(-forward.y, forward.x).normalized() * 30.0
 	for offset_sign in offset_signs:
 		if shots_spawned >= shots_to_fire:
 			break
@@ -730,12 +816,14 @@ func _fire_smg_dual_stream(direction: Vector2, shots_to_fire: int = 2) -> int:
 		projectile.enemy_targeting = enemy_focus
 		projectile.trail_enabled = false
 		projectile.color = special_color
-		var perpendicular := direction.rotated(PI / 2.0) * 30.0 * float(offset_sign)
-		projectile.global_position = global_position + perpendicular
+		var offset_vector := perpendicular_basis * float(offset_sign)
+		if offset_sign == 0:
+			offset_vector = Vector2.ZERO
 		if projectile.has_method("set_direction"):
-			projectile.set_direction(direction)
-		if get_parent():
-			get_parent().add_child(projectile)
+			projectile.set_direction(forward)
+		projectile.global_position = muzzle_origin + offset_vector
+		if parent:
+			parent.add_child(projectile)
 		shots_spawned += 1
 	return shots_spawned
 
@@ -760,6 +848,7 @@ func _fire_sniper_special(direction: Vector2) -> bool:
 	projectile.trail_color = _color_from_variant(special_attack_data.get("trail_color", default_trail_color), default_trail_color)
 	if projectile is BasicProjectileScript:
 		var basic := projectile as BasicProjectileScript
+		basic.projectile_archetype = "sniper_special"
 		basic.special_attack = true
 		basic.penetration = 9999
 		basic.max_range = max(basic.max_range, _projectile_range * 1.65)
@@ -790,6 +879,7 @@ func _configure_sniper_primary_projectile(projectile: Node, _direction: Vector2,
 	basic.special_attack = false
 	basic.speed = minf(basic.speed * 2.0, SNIPER_PRIMARY_SPEED_CAP)
 	basic.lifetime = maxf(basic.lifetime * 3.0, 0.01)
+	basic.projectile_archetype = "sniper"
 	basic.configure_glow(true, SNIPER_GLOW_COLOR, SNIPER_PRIMARY_GLOW_ENERGY, SNIPER_GLOW_SCALE, SNIPER_GLOW_HEIGHT)
 	basic.color = SNIPER_PRIMARY_BEAM_COLOR
 	basic.radius = max(basic.radius * 0.4, 0.5)
@@ -923,6 +1013,14 @@ func _fire_projectile_salvo(
 		step_degrees = (spread_degrees * 2.0) / float(total_pellets - 1)
 	var shotgun_pellets: Array = []
 	var assault_projectile: Node = null
+	var parent := get_parent()
+	var forward := _resolve_weapon_forward(direction)
+	if forward.length_squared() == 0.0:
+		forward = Vector2.RIGHT
+	var muzzle_forward := forward
+	if weapon_type == "Minigun":
+		muzzle_forward = direction.normalized() if direction.length() > 0.0 else Vector2.RIGHT
+	var muzzle_origin := global_position + _compute_muzzle_offset(muzzle_forward)
 	for idx in range(total_pellets):
 		var projectile := base_projectile if idx == 0 else BasicProjectileScene.instantiate()
 		var offset_degrees := 0.0
@@ -931,14 +1029,14 @@ func _fire_projectile_salvo(
 		var pellet_direction := direction.rotated(deg_to_rad(offset_degrees))
 		if projectile.has_method("set_direction"):
 			projectile.set_direction(pellet_direction)
-		projectile.global_position = global_position
+		projectile.global_position = muzzle_origin
 		_apply_projectile_profile(projectile)
 		_apply_salvo_overrides(projectile, pellet_direction, idx, total_pellets, salvo_overrides)
 		if projectile is BasicProjectileScript:
 			_configure_projectile_defaults(projectile as BasicProjectileScript, idx, total_pellets)
 			_apply_marian_burst_overrides(projectile as BasicProjectileScript)
-		if get_parent() and projectile.get_parent() != get_parent():
-			get_parent().add_child(projectile)
+		if parent and projectile.get_parent() != parent:
+			parent.add_child(projectile)
 		if weapon_type == "Shotgun" and projectile is BasicProjectileScript:
 			shotgun_pellets.append(projectile)
 		if weapon_type == "Assault Rifle" and assault_projectile == null and projectile is BasicProjectileScript:
@@ -950,7 +1048,6 @@ func _fire_projectile_salvo(
 		var shotgun_visuals: Dictionary = _resolve_shotgun_salvo_visuals(shotgun_pellets)
 		if shotgun_pellets.size() >= 2:
 			_spawn_shotgun_trail_effect(shotgun_pellets, forward_dir, shotgun_visuals)
-		_spawn_shotgun_muzzle_flash(forward_dir, shotgun_visuals)
 		_spawn_shotgun_shell_ejection(forward_dir, shotgun_visuals)
 	if weapon_type == "Assault Rifle" and assault_projectile != null:
 		var forward_dir := direction.normalized() if direction.length() > 0.0 else Vector2.RIGHT
@@ -1055,6 +1152,75 @@ func _on_projectile_impact(target: Node, projectile: Node, payload: Dictionary) 
 		_spawn_marian_explosion_effect((target as Node2D).global_position)
 
 
+
+func _on_grenade_impact(target: Node, projectile: Node, payload: Dictionary) -> void:
+	if projectile and projectile.has_meta("_grenade_exploded"):
+		projectile.set_meta("_grenade_exploded", true)
+	var impact_position := Vector2.ZERO
+	if projectile is Node2D:
+		impact_position = (projectile as Node2D).global_position
+	elif target is Node2D:
+		impact_position = (target as Node2D).global_position
+	else:
+		impact_position = global_position
+	var detonation_payload := payload
+	if detonation_payload.is_empty() and projectile and projectile.has_meta("_grenade_payload"):
+		var meta_payload: Variant = projectile.get_meta("_grenade_payload")
+		if meta_payload is Dictionary:
+			detonation_payload = meta_payload
+	_detonate_grenade(impact_position, detonation_payload)
+
+
+func _on_grenade_retired(projectile: Node) -> void:
+	if projectile == null or not is_instance_valid(projectile):
+		return
+	if projectile.has_meta("_grenade_exploded") and bool(projectile.get_meta("_grenade_exploded")):
+		return
+	var payload: Dictionary = {}
+	if projectile.has_meta("_grenade_payload"):
+		var raw_payload: Variant = projectile.get_meta("_grenade_payload")
+		if raw_payload is Dictionary:
+			payload = raw_payload
+	var explode_at_target := bool(payload.get("explode_at_target", false))
+	var fallback_position := global_position
+	if explode_at_target and payload.get("target_position") is Vector2:
+		fallback_position = payload.get("target_position") as Vector2
+	elif projectile is Node2D:
+		fallback_position = (projectile as Node2D).global_position
+	projectile.set_meta("_grenade_exploded", true)
+	_detonate_grenade(fallback_position, payload)
+
+
+func _detonate_grenade(explosion_position: Vector2, payload: Dictionary) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var default_color := Color(1.0, 0.97, 0.6, 0.9)
+	var explosion_color := _color_from_variant(payload.get("explosion_color", default_color), default_color)
+	var explosion_radius := float(payload.get("explosion_radius", 180.0))
+	var explosion_damage := int(payload.get("explosion_damage", _calculate_burst_damage(2.5)))
+	var effect: ExplosionEffect = _create_explosion_effect()
+	effect.radius = explosion_radius
+	effect.duration = 0.45
+	effect.base_color = Color(explosion_color.r, explosion_color.g, explosion_color.b, clampf(explosion_color.a, 0.0, 1.0))
+	effect.glow_color = Color(
+		clampf(explosion_color.r * 1.02, 0.0, 1.0),
+		clampf(explosion_color.g * 0.85 + 0.12, 0.0, 1.0),
+		clampf(explosion_color.b * 0.6 + 0.1, 0.0, 1.0),
+		clampf(explosion_color.a * 0.75 + 0.1, 0.0, 1.0)
+	)
+	effect.core_color = Color(1.0, 0.95, 0.85, 0.96)
+	effect.shockwave_color = Color(
+		clampf(explosion_color.r * 0.95 + 0.05, 0.0, 1.0),
+		clampf(explosion_color.g * 0.7 + 0.1, 0.0, 1.0),
+		clampf(explosion_color.b * 0.4 + 0.1, 0.0, 1.0),
+		0.8
+	)
+	parent.call_deferred("add_child", effect)
+	effect.call_deferred("set", "global_position", explosion_position)
+	_apply_burst_damage_area(explosion_position, explosion_radius * 0.9, max(1, explosion_damage))
+
+
 func _apply_marian_burst_overrides(projectile: BasicProjectileScript) -> void:
 	if _marian_burst_time_left <= 0.0:
 		return
@@ -1069,34 +1235,19 @@ func _spawn_shotgun_trail_effect(pellets: Array, forward: Vector2, visual_data: 
 	var parent_node := get_parent()
 	if parent_node == null:
 		return
-	var effect := ShotgunTrailEffectScript.new()
+	var effect: ShotgunTrailEffect = _create_shotgun_trail_effect()
+	if effect == null:
+		return
 	var base_color: Color = visual_data.get("color", _projectile_color)
 	var is_special := bool(visual_data.get("special", false))
 	var glow_color := _resolve_shotgun_trail_glow(base_color, is_special)
 	parent_node.add_child(effect)
 	effect.global_position = global_position
-	effect.configure(pellets.duplicate(), forward, base_color, glow_color, is_special)
+	effect.configure(pellets.duplicate(), forward, base_color, glow_color, is_special, false)
 
-func _spawn_shotgun_muzzle_flash(_forward: Vector2, _visual_data: Dictionary) -> void:
-	# Muzzle flash visuals have been retired for clarity.
+func _spawn_shotgun_shell_ejection(_forward: Vector2, _visual_data: Dictionary) -> void:
+	# Shell ejection effect disabled to avoid rectangular particles lingering near the player.
 	return
-
-func _spawn_shotgun_shell_ejection(forward: Vector2, visual_data: Dictionary) -> void:
-	var parent_node := get_parent()
-	if parent_node == null:
-		return
-	var shell_count := 4 if bool(visual_data.get("special", false)) else 2
-	var base_forward := forward.normalized() if forward.length() > 0.0 else Vector2.RIGHT
-	var shell_color := Color(1.0, 0.82, 0.28, 1.0)
-	var perpendicular := Vector2(-base_forward.y, base_forward.x).normalized()
-	for _i in range(shell_count):
-		var shell := ShotgunShellCasingScript.new()
-		parent_node.add_child(shell)
-		var side_offset := perpendicular * _weapon_rng.randf_range(10.0, 18.0)
-		var backward_offset := base_forward * _weapon_rng.randf_range(-12.0, -4.0)
-		shell.global_position = global_position + side_offset + backward_offset
-		shell.lifetime = 2.0 if shell_count > 2 else 1.6
-		shell.configure(base_forward, shell_color)
 
 func _spawn_assault_rifle_effects(_projectile: Node, _forward: Vector2) -> void:
 	# Rifle primary no longer spawns muzzle or shell effects to keep visuals clean.
@@ -1188,9 +1339,11 @@ func _fire_rocket_primary(direction: Vector2) -> bool:
 func _launch_rocket(direction: Vector2, is_special: bool) -> bool:
 	var rocket := ExplosiveProjectileScript.new()
 	var target_position := get_global_mouse_position()
-	rocket.global_position = global_position
+	var forward := _resolve_weapon_forward(direction)
+	if forward.length_squared() == 0.0:
+		forward = Vector2.RIGHT
 	rocket.owner_node = self
-	rocket.direction = direction
+	rocket.direction = forward
 	rocket.target_position = target_position
 	rocket.explode_at_target = true
 	rocket.render_style = "rocket"
@@ -1246,14 +1399,11 @@ func _launch_rocket(direction: Vector2, is_special: bool) -> bool:
 		rocket.ground_fire_color = Color(base_color.r, base_color.g * 0.9, base_color.b * 0.7, 0.85)
 	else:
 		rocket.ground_fire_enabled = false
+	var spawn_origin := global_position + _compute_muzzle_offset(forward)
+	rocket.global_position = spawn_origin
 	if get_parent():
 		get_parent().add_child(rocket)
-	_spawn_muzzle_explosion(base_color, rocket.explosion_radius * (0.35 if is_special else 0.28), direction)
 	return true
-
-func _spawn_muzzle_explosion(_color: Color, _radius: float, _direction: Vector2 = Vector2.ZERO) -> void:
-	# Universal muzzle explosions disabled to keep weapon fire clean.
-	return
 
 func _consume_ammo(amount: int = 1, force_for_shotgun: bool = false) -> void:
 	if weapon_type == "Shotgun" and not force_for_shotgun:
@@ -1512,6 +1662,71 @@ func _lighten_color(base_color: Color, amount: float) -> Color:
 	var target_saturation := clampf(base_color.s * (1.0 - clamped * 0.4), 0.0, 1.0)
 	return Color.from_hsv(base_color.h, target_saturation, target_value, base_color.a)
 
+func _color_from_variant(variant: Variant, fallback: Color) -> Color:
+	match typeof(variant):
+		TYPE_COLOR:
+			return variant
+		TYPE_STRING, TYPE_STRING_NAME:
+			var text := String(variant).strip_edges()
+			if text.is_empty():
+				return fallback
+			return Color.from_string(text, fallback)
+		TYPE_DICTIONARY:
+			var dict := variant as Dictionary
+			var r := float(dict.get("r", dict.get("red", fallback.r)))
+			var g := float(dict.get("g", dict.get("green", fallback.g)))
+			var b := float(dict.get("b", dict.get("blue", fallback.b)))
+			var a := float(dict.get("a", dict.get("alpha", fallback.a)))
+			return Color(clampf(r, 0.0, 1.0), clampf(g, 0.0, 1.0), clampf(b, 0.0, 1.0), clampf(a, 0.0, 1.0))
+		TYPE_ARRAY:
+			var array := variant as Array
+			if array.size() >= 3:
+				var r_val := float(array[0]) if array[0] is float or array[0] is int else fallback.r
+				var g_val := float(array[1]) if array[1] is float or array[1] is int else fallback.g
+				var b_val := float(array[2]) if array[2] is float or array[2] is int else fallback.b
+				var a_val := float(array[3]) if array.size() > 3 and (array[3] is float or array[3] is int) else fallback.a
+				return Color(clampf(r_val, 0.0, 1.0), clampf(g_val, 0.0, 1.0), clampf(b_val, 0.0, 1.0), clampf(a_val, 0.0, 1.0))
+	return fallback
+
+func _apply_v_blast_damage(origin: Vector2, forward: Vector2, blast_range: float, blast_angle: float, damage: int, target: Node = null) -> void:
+	if damage <= 0 or not get_tree():
+		return
+	var enemies := get_tree().get_nodes_in_group("enemies")
+	if enemies.is_empty():
+		return
+	var direction := forward.normalized() if forward.length() > 0.0 else Vector2.RIGHT
+	var half_angle := deg_to_rad(max(0.0, blast_angle) * 0.5)
+	var range_sq: float = max(0.0, blast_range) * max(0.0, blast_range)
+	for enemy in enemies:
+		if not is_instance_valid(enemy):
+			continue
+		if not (enemy is Node2D) or not enemy.has_method("apply_damage"):
+			continue
+		var enemy_node := enemy as Node2D
+		if target and enemy_node == target:
+			continue
+		var to_enemy := enemy_node.global_position - origin
+		var distance_sq := to_enemy.length_squared()
+		if range_sq > 0.0 and distance_sq > range_sq:
+			continue
+		if distance_sq == 0.0:
+			continue
+		var angle_to_enemy := direction.angle_to(to_enemy.normalized())
+		if abs(angle_to_enemy) > half_angle:
+			continue
+		var damage_result: int = enemy_node.apply_damage(damage)
+		if damage_result != 0:
+			register_burst_hit(enemy_node)
+
+func _derive_assault_rifle_trail_color(base_color: Color) -> Color:
+	var dimmer := Color(
+		clampf(base_color.r * 0.72, 0.0, 1.0),
+		clampf(base_color.g * 0.7, 0.0, 1.0),
+		clampf(base_color.b * 0.6, 0.0, 1.0),
+		clampf(base_color.a * 0.82, 0.0, 1.0)
+	)
+	return dimmer
+
 func _on_minigun_projectile_spawned(projectile: Node, _pellet_direction: Vector2, _pellet_index: int, _pellet_total: int) -> void:
 	if projectile == null or not is_instance_valid(projectile):
 		return
@@ -1525,14 +1740,14 @@ func _on_minigun_projectile_spawned(projectile: Node, _pellet_direction: Vector2
 		basic.shape = "standard"
 		basic.color = _projectile_color
 		basic.trail_enabled = false
-		basic.configure_glow(true, _projectile_color, 2.2, 1.25, -3.5)
+		basic.configure_glow(false, Color(), 0, 0, 0)
 		basic.call_deferred("_update_collision_shape_radius")
 		basic.call_deferred("_sync_visual_state")
 
 func _fire_minigun_special(direction: Vector2) -> bool:
 	if weapon_type != "Minigun":
 		return false
-	var charge_cost: float = float(_resolve_minigun_lightning_setting("lightning_fire_cost", MINIGUN_LIGHTNING_FIRE_COST))
+	var charge_cost: float = float(_resolve_minigun_lightning_setting("lightning_fire_cost", MINIGUN_LIGHTNING_FIRE_COOLDOWN))
 	charge_cost = max(0.0, charge_cost)
 	if charge_cost > 0.0 and _minigun_special_charge < charge_cost:
 		return false
@@ -1684,7 +1899,7 @@ func _spawn_minigun_lightning_arc(start_point: Vector2, end_point: Vector2, inte
 	var parent := get_parent()
 	if parent == null:
 		return
-	var arc: Node2D = MinigunLightningArcScript.new()
+	var arc: MinigunLightningArc = _create_minigun_lightning_arc()
 	if arc == null:
 		return
 	parent.add_child(arc)
@@ -1694,9 +1909,13 @@ func _spawn_minigun_lightning_arc(start_point: Vector2, end_point: Vector2, inte
 		arc.global_position = start_point
 
 func _compute_muzzle_offset(forward: Vector2) -> Vector2:
+	var direction := forward
+	if direction.length_squared() == 0.0:
+		direction = Vector2.RIGHT
+	else:
+		direction = direction.normalized()
 	var forward_distance: float = max(44.0, _projectile_radius * 8.5)
-	var height_offset: Vector2 = Vector2(0.0, -12.0)
-	return forward * forward_distance + height_offset
+	return direction * forward_distance + Vector2(0.0, MUZZLE_VERTICAL_OFFSET)
 
 func apply_profile(profile) -> void:
 	if not profile:
@@ -1995,7 +2214,7 @@ func _spawn_assault_burst(is_smg: bool) -> void:
 			offset_ratio = (float(i) / float(blast_count - 1)) * 2.0 - 1.0
 		var angle := deg_to_rad(spread_degrees * offset_ratio)
 		var distance := base_distance + float(i) * (40.0 if is_smg else 52.0)
-		var effect := ExplosionEffectScript.new()
+		var effect: ExplosionEffect = _create_explosion_effect()
 		effect.radius = (130.0 if is_smg else 180.0) * (1.0 - abs(offset_ratio) * 0.25)
 		effect.duration = 0.4
 		effect.base_color = base_color
@@ -2015,7 +2234,9 @@ func _spawn_sniper_burst() -> void:
 	if direction.length() == 0.0:
 		direction = _last_move_direction
 	direction = direction.normalized() if direction.length() > 0.0 else Vector2.RIGHT
-	var beam := BeamAttackScript.new()
+	var beam: BeamAttack = _create_beam_attack()
+	if beam == null:
+		return
 	beam.owner_reference = self
 	beam.direction = direction
 	beam.beam_range = max(_projectile_range * 1.5, 1000.0)
@@ -2033,7 +2254,7 @@ func _spawn_trailing_explosions(direction: Vector2, color: Color) -> void:
 	if not parent:
 		return
 	for step in range(3):
-		var effect := ExplosionEffectScript.new()
+		var effect: ExplosionEffect = _create_explosion_effect()
 		effect.radius = 120.0 + float(step) * 30.0
 		effect.duration = 0.3
 		effect.base_color = Color(color.r, color.g, color.b, 0.55)
@@ -2053,7 +2274,7 @@ func _spawn_rocket_burst() -> void:
 		direction = _last_move_direction
 	direction = direction.normalized() if direction.length() > 0.0 else Vector2.RIGHT
 	var target: Vector2 = global_position + direction * max(_projectile_range * 0.6, 360.0)
-	var effect := ExplosionEffectScript.new()
+	var effect := _create_explosion_effect()
 	effect.radius = 260.0
 	effect.duration = 0.55
 	var base_color := _color_from_variant(special_attack_data.get("burst_color", Color(1.0, 0.6, 0.32, 0.9)), Color(1.0, 0.6, 0.32, 0.9))
@@ -2065,14 +2286,15 @@ func _spawn_rocket_burst() -> void:
 	parent.add_child(effect)
 	effect.global_position = target
 	_apply_burst_damage_area(effect.global_position, effect.radius * 1.1, _calculate_burst_damage(3.2))
-	var scorch := GroundFireScript.new()
-	scorch.radius = effect.radius * 0.8
-	scorch.duration = 4.0
-	scorch.damage_per_tick = max(1, int(round(_calculate_burst_damage(0.4))))
-	scorch.color = Color(base_color.r, base_color.g * 0.8, base_color.b * 0.6, 0.6)
-	scorch.glow_color = Color(base_color.r, base_color.g * 0.6, base_color.b * 0.4, 0.5)
-	parent.add_child(scorch)
-	scorch.global_position = target
+	var scorch: GroundFire = _create_ground_fire()
+	if scorch:
+		scorch.radius = effect.radius * 0.8
+		scorch.duration = 4.0
+		scorch.damage_per_tick = max(1, int(round(_calculate_burst_damage(0.4))))
+		scorch.color = Color(base_color.r, base_color.g * 0.8, base_color.b * 0.6, 0.6)
+		scorch.glow_color = Color(base_color.r, base_color.g * 0.6, base_color.b * 0.4, 0.5)
+		parent.add_child(scorch)
+		scorch.global_position = target
 
 
 func _spawn_shotgun_burst() -> void:
@@ -2092,7 +2314,9 @@ func _spawn_minigun_burst() -> void:
 	var parent := get_parent()
 	if not parent:
 		return
-	var fire := GroundFireScript.new()
+	var fire: GroundFire = _create_ground_fire()
+	if fire == null:
+		return
 	fire.radius = 190.0
 	fire.duration = 5.0
 	fire.tick_interval = 0.35
@@ -2118,7 +2342,9 @@ func _spawn_sword_burst() -> void:
 	var base_color := _color_from_variant(special_attack_data.get("burst_color", Color(0.9, 0.25, 0.35, 0.9)), Color(0.9, 0.25, 0.35, 0.9))
 	for i in range(swings):
 		var angle := deg_to_rad(-45.0 + 30.0 * float(i))
-		var beam := BeamAttackScript.new()
+		var beam: BeamAttack = _create_beam_attack()
+		if beam == null:
+			continue
 		beam.owner_reference = self
 		beam.direction = direction.rotated(angle)
 		beam.beam_range = 420.0
@@ -2127,7 +2353,7 @@ func _spawn_sword_burst() -> void:
 		beam.duration = 0.25 + 0.08 * float(i)
 		beam.color = Color(base_color.r, base_color.g, base_color.b, base_color.a * (0.9 - 0.12 * i))
 		parent.add_child(beam)
-		var explosion := ExplosionEffectScript.new()
+		var explosion: ExplosionEffect = _create_explosion_effect()
 		explosion.radius = 150.0
 		explosion.duration = 0.35
 		explosion.base_color = base_color
@@ -2454,7 +2680,7 @@ func _rewind_player_state(position_duration: float, health_duration: float = -1.
 		_minigun_boost_time_left = 0.0
 		if weapon_type == "Minigun" and _minigun_initial_fire_rate > 0.0:
 			_apply_minigun_spin_stats(0.0)
-			emit_signal("player_died")
+		emit_signal("player_died")
 	var restored_ammo := int(health_snapshot.get("ammo", magazine_size)) if magazine_size > 0 else _ammo_in_magazine
 	var restored_grenades := int(health_snapshot.get("grenade", _max_grenade_rounds))
 	var ammo_clamped := clampi(restored_ammo, 0, magazine_size) if magazine_size > 0 else restored_ammo
@@ -2489,7 +2715,7 @@ func _find_rewind_snapshot(target_time: float) -> Dictionary:
 func _spawn_support_burst_flash(color: Color, radius: float = 220.0, duration: float = 0.45) -> void:
 	if not get_parent():
 		return
-	var effect := ExplosionEffectScript.new()
+	var effect: ExplosionEffect = _create_explosion_effect()
 	effect.radius = max(80.0, radius)
 	effect.duration = max(0.1, duration)
 	effect.base_color = Color(color.r, color.g, color.b, clampf(color.a, 0.0, 1.0))
@@ -2503,7 +2729,7 @@ func _spawn_support_burst_flash(color: Color, radius: float = 220.0, duration: f
 func _spawn_scarlet_enemy_flash(flash_position: Vector2) -> void:
 	if not get_parent():
 		return
-	var effect := ExplosionEffectScript.new()
+	var effect: ExplosionEffect = _create_explosion_effect()
 	effect.radius = 130.0
 	effect.duration = 0.3
 	effect.base_color = SCARLET_TELEPORT_EFFECT_COLOR
@@ -2518,7 +2744,7 @@ func _spawn_marian_explosion_effect(impact_position: Vector2) -> void:
 	var parent := get_parent()
 	if parent == null:
 		return
-	var effect := ExplosionEffectScript.new()
+	var effect: ExplosionEffect = _create_explosion_effect()
 	effect.radius = MARIAN_BURST_EXPLOSION_RADIUS
 	effect.duration = 0.28
 	effect.base_color = MARIAN_BURST_COLOR
@@ -2534,7 +2760,7 @@ func _spawn_crown_burst_effect(radius: float) -> void:
 	var parent := get_parent()
 	if parent == null:
 		return
-	var effect := ExplosionEffectScript.new()
+	var effect: ExplosionEffect = _create_explosion_effect()
 	effect.radius = max(200.0, radius)
 	effect.duration = 0.6
 	effect.base_color = Color(0.96, 0.82, 0.4, 0.78)
@@ -2670,7 +2896,7 @@ func _activate_scarlet_burst() -> void:
 	var choice_index := 0
 	if killed_positions.size() > 1:
 		choice_index = int(randi()) % killed_positions.size()
-	_scarlet_teleport_target = killed_positions[choice_index]
+	_scarlet_teleport_target = killed_positions[ choice_index]
 	_scarlet_teleport_ready = true
 
 func _activate_rapunzel_burst() -> void:
@@ -2724,7 +2950,7 @@ func _apply_crown_burst_damage(center: Vector2, radius: float, base_damage: int)
 		if dealt > 0:
 			register_burst_hit(enemy_node)
 			if get_parent():
-				var enemy_effect := ExplosionEffectScript.new()
+				var enemy_effect: ExplosionEffect = _create_explosion_effect()
 				enemy_effect.radius = max(80.0, radius * 0.25)
 				enemy_effect.duration = 0.32
 				enemy_effect.base_color = Color(0.96, 0.82, 0.4, 0.6)
@@ -2776,7 +3002,7 @@ func _spawn_snow_white_enemy_flash(impact_position: Vector2, beam_range: float) 
 	var parent := get_parent()
 	if parent == null:
 		return
-	var effect := ExplosionEffectScript.new()
+	var effect: ExplosionEffect = _create_explosion_effect()
 	effect.radius = clampf(beam_range * 0.18, 140.0, 420.0)
 	effect.duration = 0.45
 	effect.base_color = Color(0.65, 0.82, 1.0, 0.6)
@@ -2826,7 +3052,7 @@ func _execute_crown_burst_tick() -> void:
 	var damage: int = _calculate_burst_damage(1.6)
 	_apply_burst_damage_area(global_position, 300.0, damage)
 	if get_parent():
-		var effect := ExplosionEffectScript.new()
+		var effect: ExplosionEffect = _create_explosion_effect()
 		effect.radius = 300.0
 		effect.duration = 0.45
 		effect.base_color = Color(0.78, 0.52, 1.0, 0.65)
@@ -3100,99 +3326,3 @@ func _on_shotgun_special_hit(target: Node, projectile: Node, payload: Dictionary
 	var blast_damage := int(payload.get("blast_damage", _projectile_damage))
 	if blast_damage > 0:
 		_apply_v_blast_damage(blast_origin, forward, blast_range, blast_angle, blast_damage, target)
-
-func _apply_v_blast_damage(origin: Vector2, direction: Vector2, blast_range: float, blast_angle: float, blast_damage: int, excluded_target: Node = null) -> void:
-	var enemies := get_tree().get_nodes_in_group("enemies")
-	if enemies.is_empty():
-		return
-	var normalized_direction := direction.normalized() if direction.length() > 0.0 else Vector2.RIGHT
-	var half_angle := deg_to_rad(blast_angle * 0.5)
-	for enemy in enemies:
-		if not is_instance_valid(enemy):
-			continue
-		if not (enemy is Node2D):
-			continue
-		if not enemy.has_method("apply_damage"):
-			continue
-		if excluded_target != null and enemy == excluded_target:
-			continue
-		var enemy_node := enemy as Node2D
-		var to_enemy := enemy_node.global_position - origin
-		var distance := to_enemy.length()
-		if distance <= 0.0 or distance > blast_range:
-			continue
-		var angle_offset := normalized_direction.angle_to(to_enemy.normalized())
-		if abs(angle_offset) > half_angle:
-			continue
-		enemy_node.apply_damage(blast_damage)
-		register_burst_hit(enemy_node)
-
-func _derive_assault_rifle_trail_color(base_color: Color) -> Color:
-	var offset: float = 50.0 / 255.0
-	return Color(
-		clampf(base_color.r - offset, 0.0, 1.0),
-		clampf(base_color.g - offset, 0.0, 1.0),
-		clampf(base_color.b - offset, 0.0, 1.0),
-		0.85
-	)
-
-func _color_from_variant(value: Variant, fallback: Color) -> Color:
-	match typeof(value):
-		TYPE_COLOR:
-			return value
-		TYPE_ARRAY:
-			return _color_array_to_color(value as Array, fallback)
-		TYPE_PACKED_FLOAT32_ARRAY:
-			return _color_array_to_color(Array(value), fallback)
-		TYPE_PACKED_INT32_ARRAY:
-			return _color_array_to_color(Array(value), fallback)
-		TYPE_PACKED_BYTE_ARRAY:
-			return _color_array_to_color(Array(value), fallback)
-		TYPE_DICTIONARY:
-			return _color_dict_to_color(value as Dictionary, fallback)
-		TYPE_STRING:
-			return Color.from_string(value, fallback)
-		_:
-			pass
-	return fallback
-
-func _color_array_to_color(values: Array, fallback: Color) -> Color:
-	if values.is_empty():
-		return fallback
-	var r := _color_component_to_float(values[0], fallback.r)
-	var g := fallback.g
-	var b := fallback.b
-	var a := fallback.a
-	if values.size() > 1:
-		g = _color_component_to_float(values[1], fallback.g)
-	if values.size() > 2:
-		b = _color_component_to_float(values[2], fallback.b)
-	if values.size() > 3:
-		a = _color_component_to_float(values[3], fallback.a)
-	return Color(r, g, b, a)
-
-func _color_dict_to_color(values: Dictionary, fallback: Color) -> Color:
-	var r := _color_component_to_float(values.get("r", fallback.r), fallback.r)
-	var g := _color_component_to_float(values.get("g", fallback.g), fallback.g)
-	var b := _color_component_to_float(values.get("b", fallback.b), fallback.b)
-	var a := _color_component_to_float(values.get("a", fallback.a), fallback.a)
-	return Color(r, g, b, a)
-
-func _color_component_to_float(value: Variant, fallback: float) -> float:
-	match typeof(value):
-		TYPE_FLOAT:
-			return clampf(value, 0.0, 1.0)
-		TYPE_INT:
-			if value > 1:
-				return clampf(float(value) / 255.0, 0.0, 1.0)
-			return clampf(float(value), 0.0, 1.0)
-		TYPE_BOOL:
-			return 1.0 if value else 0.0
-		TYPE_STRING:
-			var text := str(value).strip_edges()
-			if text.is_valid_float():
-				var parsed := text.to_float()
-				if parsed > 1.0:
-					return clampf(parsed / 255.0, 0.0, 1.0)
-				return clampf(parsed, 0.0, 1.0)
-	return clampf(fallback, 0.0, 1.0)

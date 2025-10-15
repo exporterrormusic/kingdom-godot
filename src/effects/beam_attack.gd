@@ -1,3 +1,4 @@
+@tool
 extends Node2D
 class_name BeamAttack
 
@@ -14,10 +15,20 @@ var _damaged_enemies: Dictionary = {}
 
 func _ready() -> void:
 	direction = direction.normalized() if direction.length() > 0.0 else Vector2.RIGHT
+	if Engine.is_editor_hint():
+		_setup_editor_preview()
 	set_process(true)
 	queue_redraw()
 
 func _process(delta: float) -> void:
+	if Engine.is_editor_hint():
+		_elapsed += delta
+		if duration <= 0.0:
+			duration = 0.35
+		if _elapsed >= duration:
+			_elapsed = 0.0
+		queue_redraw()
+		return
 	_elapsed += delta
 	if owner_reference and is_instance_valid(owner_reference):
 		global_position = owner_reference.global_position
@@ -107,3 +118,10 @@ func _draw() -> void:
 		var dir: Vector2 = Vector2.RIGHT.rotated(angle)
 		draw_line(end - dir * cross_length * 0.2, end + dir * cross_length, Color(flare_color.r, flare_color.g, flare_color.b, flare_color.a * 0.65), max(2.0, tip_radius * 0.18), true)
 		draw_line(end - dir * cross_length * 0.08, end + dir * cross_length * 0.6, cross_color, max(1.2, tip_radius * 0.1), true)
+
+
+func _setup_editor_preview() -> void:
+	if direction.length() == 0.0:
+		direction = Vector2.RIGHT
+	_elapsed = 0.0
+	_damaged_enemies.clear()

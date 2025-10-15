@@ -28,7 +28,7 @@ window/size/test_height=1080
 [rendering]
 
 environment/default_clear_color=Color(0, 0, 0, 1)
-rendering/2d/glow/enabled=true
+rendering/2d/glow/enabled=false
 rendering/2d/glow/intensity=0.8
 rendering/2d/glow/strength=0.9
 rendering/2d/glow/levels=PackedFloat32Array(1, 0.8, 0.6, 0.4, 0.2, 0.1)

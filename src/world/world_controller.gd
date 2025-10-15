@@ -26,12 +26,12 @@ const BossEnemyScene := preload("res://scenes/enemies/BossEnemy.tscn")
 
 const SNOW_PATH_STEP := 56.0
 const SNOW_PATH_RADIUS := 146.0
-const SNOW_FOOTPRINT_RADIUS := 58.0
-const SNOW_EDGE_OFFSET := 26.0
+const SNOW_FOOTPRINT_RADIUS := 62.0
+const SNOW_EDGE_OFFSET := 34.0
 const SNOW_KICKUP_INTERVAL := 0.14
 const SNOW_KICKUP_SPEED_THRESHOLD := 28.0
 const SNOW_KICKUP_MAX_SPEED := 420.0
-const SNOW_KICKUP_VERTICAL_OFFSET := 42.0
+const SNOW_KICKUP_VERTICAL_OFFSET := 24.0
 const SPAWN_SAFE_PADDING := 96.0
 const BOSS_ALERT_SFX_PATH := "res://assets/sounds/sfx/growl.mp3"
 const DEFAULT_WORLD_BOUNDS := Rect2(Vector2(-1920.0, -1080.0), Vector2(3840.0, 2160.0))
@@ -258,10 +258,12 @@ func _update_continuous_snow_kickup(delta: float) -> void:
 		lateral = Vector2.RIGHT
 	lateral = lateral.normalized()
 	var edge_offset: float = SNOW_EDGE_OFFSET * 0.85
+	var mid_offset := edge_offset * 0.55
 	var positions: Array[Vector2] = [
 		base_position + lateral * edge_offset + forward_offset,
 		base_position - lateral * edge_offset + forward_offset,
-		base_position + forward_offset * 0.4
+		base_position + lateral * mid_offset + forward_offset * 0.4,
+		base_position - lateral * mid_offset + forward_offset * 0.4
 	]
 	for sample_position: Vector2 in positions:
 		_environment_controller.emit_snow_kickup(sample_position, normalized_strength)

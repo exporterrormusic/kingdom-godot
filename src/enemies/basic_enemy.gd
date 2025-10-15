@@ -5,18 +5,27 @@ const EnemySpriteSheet := preload("res://assets/images/Enemies/rapture1-sprite.p
 const ENEMY_COLUMNS := 3
 const ENEMY_ROWS := 4
 const ENEMY_SPRITE_SCALE := CharacterSpriteAnimator.DEFAULT_SCALE * (2.0 / 3.0)
-const BODY_GLOW_COLOR := Color(1.0, 0.3, 0.18, 1.0)
-const GROUND_GLOW_COLOR := Color(1.0, 0.22, 0.12, 1.0)
-const BODY_GLOW_BASE_ENERGY := 0.82
-const GROUND_GLOW_BASE_ENERGY := 1.08
-const BODY_GLOW_TEXTURE_SCALE := 1.35
-const GROUND_GLOW_TEXTURE_SCALE := 1.75
-const BODY_GLOW_MAX_ALPHA := 0.9
-const GROUND_GLOW_MAX_ALPHA := 0.75
-const BODY_GLOW_FALLOFF_POWER := 2.8
-const GROUND_GLOW_FALLOFF_POWER := 2.2
+const EnemyDeathBurstScene := preload("res://scenes/effects/EnemyDeathBurst.tscn")
+const EnemyDeathBurstScript: GDScript = preload("res://src/effects/enemy_death_burst.gd")
+const BODY_GLOW_COLOR := Color(1.0, 0.36, 0.22, 1.0)
+const BODY_GLOW_RIM_COLOR := Color(1.0, 0.84, 0.62, 1.0)
+const GROUND_GLOW_COLOR := Color(1.0, 0.28, 0.15, 1.0)
+const BODY_GLOW_BASE_ENERGY := 0.7
+const GROUND_GLOW_BASE_ENERGY := 0.92
+const BODY_GLOW_TEXTURE_SCALE := 1.22
+const GROUND_GLOW_TEXTURE_SCALE := 1.6
+const BODY_GLOW_MAX_ALPHA := 0.62
+const GROUND_GLOW_MAX_ALPHA := 0.52
+const BODY_GLOW_FALLOFF_POWER := 3.1
+const GROUND_GLOW_FALLOFF_POWER := 2.45
+const BODY_GLOW_LUMA_BIAS := 0.46
+const BODY_GLOW_RIM_SOFTNESS := 0.22
+const BODY_GLOW_PULSE_SPEED := 2.8
+const BODY_GLOW_PULSE_AMPLITUDE := 0.16
 const GLOW_TEXTURE_SIZE := 192
-const GLOW_SHADER_PATH := "res://resources/shaders/enemy_red_glow.gdshader"
+const GLOW_SHADER_PATH := "res://resources/shaders/enemy_dual_glow.gdshader"
+const ENEMY_BODY_GLOW_Z_INDEX := 910
+const ENEMY_GROUND_GLOW_Z_INDEX := 909
 
 signal defeated(enemy: BasicEnemy)
 signal health_changed(current: int, max: int, delta: int)
@@ -39,6 +48,8 @@ var _target: Node2D = null
 @onready var _collision_shape: CollisionShape2D = $CollisionShape2D
 @onready var _body_light: PointLight2D = $BodyGlow
 @onready var _ground_light: PointLight2D = $GroundGlow
+var _body_glow_sprite: Sprite2D = null
+var _ground_glow_sprite: Sprite2D = null
 
 static var _body_glow_texture: Texture2D = null
 static var _ground_glow_texture: Texture2D = null
@@ -59,6 +70,10 @@ var _body_glow_base_scale: Vector2 = Vector2.ZERO
 var _ground_glow_base_scale: Vector2 = Vector2.ZERO
 var _body_glow_base_height: float = 0.0
 var _ground_glow_base_height: float = 0.0
+var _body_glow_base_position: Vector2 = Vector2.ZERO
+var _ground_glow_base_position: Vector2 = Vector2.ZERO
+var _current_glow_radius_scale: float = 1.0
+var _glow_exposure: float = 1.0
 
 func _ready() -> void:
 	_current_health = max_health
@@ -123,6 +138,7 @@ func apply_damage(amount: int) -> int:
 	var delta := _current_health - previous
 	emit_health_state(delta)
 	if _current_health <= 0:
+		_spawn_death_effect()
 		defeated.emit(self)
 		queue_free()
 	return -delta
@@ -205,11 +221,18 @@ func _init_glow_components() -> void:
 	_body_glow_energy_scale = body_glow_intensity
 	_ground_glow_energy_scale = ground_glow_intensity
 	if _body_light:
+		_body_light.z_as_relative = false
+		_body_light.z_index = ENEMY_BODY_GLOW_Z_INDEX
 		_body_glow_base_scale = _body_light.scale
 		_body_glow_base_height = _body_light.height
+		_body_glow_base_position = _body_light.position
 	if _ground_light:
+		_ground_light.z_as_relative = false
+		_ground_light.z_index = ENEMY_GROUND_GLOW_Z_INDEX
 		_ground_glow_base_scale = _ground_light.scale
 		_ground_glow_base_height = _ground_light.height
+		_ground_glow_base_position = _ground_light.position
+	_ensure_glow_sprites()
 	_apply_glow_material()
 	_apply_glow_textures()
 	_connect_environment_controller()
@@ -230,13 +253,20 @@ func _apply_glow_material() -> void:
 		return
 	var shader_material := ShaderMaterial.new()
 	shader_material.shader = _glow_shader
-	shader_material.set_shader_parameter("glow_tint", BODY_GLOW_COLOR)
-	shader_material.set_shader_parameter("glow_strength", 1.2)
+	shader_material.set_shader_parameter("core_tint", BODY_GLOW_COLOR)
+	shader_material.set_shader_parameter("rim_tint", BODY_GLOW_RIM_COLOR)
+	shader_material.set_shader_parameter("glow_strength", 1.0)
+	shader_material.set_shader_parameter("rim_strength", 0.85)
+	shader_material.set_shader_parameter("luma_bias", BODY_GLOW_LUMA_BIAS)
+	shader_material.set_shader_parameter("rim_softness", BODY_GLOW_RIM_SOFTNESS)
+	shader_material.set_shader_parameter("pulse_speed", BODY_GLOW_PULSE_SPEED)
+	shader_material.set_shader_parameter("pulse_amplitude", BODY_GLOW_PULSE_AMPLITUDE)
 	_animator.material = shader_material
 	_update_glow_for_tint()
 
 func _apply_glow_textures() -> void:
 	var radius_scale := clampf(glow_radius_multiplier, 0.25, 3.0)
+	_current_glow_radius_scale = radius_scale
 	if _body_light:
 		if _body_glow_base_scale == Vector2.ZERO:
 			_body_glow_base_scale = Vector2.ONE
@@ -257,21 +287,22 @@ func _apply_glow_textures() -> void:
 		_ground_light.scale = _ground_glow_base_scale * clampf(radius_scale, 0.7, 2.5)
 		_ground_light.height = _ground_glow_base_height
 		_ground_light.shadow_enabled = false
+	_refresh_glow_sprites()
 
 func _update_glow_for_tint() -> void:
 	if not _animator:
 		return
 	if _animator.material and _animator.material is ShaderMaterial:
 		var mat := _animator.material as ShaderMaterial
-		var adjusted := BODY_GLOW_COLOR
-		adjusted.r = clamp(adjusted.r * (_base_modulate.r + 0.2), 0.0, 1.4)
-		adjusted.g = clamp(adjusted.g * max(0.3, _base_modulate.g + 0.1), 0.0, 1.0)
-		adjusted.b = clamp(adjusted.b * max(0.25, _base_modulate.b + 0.05), 0.0, 1.0)
-		mat.set_shader_parameter("glow_tint", adjusted)
+		var core := BODY_GLOW_COLOR.lerp(_base_modulate, 0.35)
+		var rim := BODY_GLOW_RIM_COLOR.lerp(Color(1.0, 1.0, 1.0, 1.0), 0.25).lerp(_base_modulate, 0.18)
+		mat.set_shader_parameter("core_tint", core)
+		mat.set_shader_parameter("rim_tint", rim)
 	if _body_light:
 		_body_light.color = BODY_GLOW_COLOR.lerp(_base_modulate, 0.28)
 	if _ground_light:
 		_ground_light.color = GROUND_GLOW_COLOR.lerp(_base_modulate, 0.22)
+	_refresh_glow_sprites()
 
 func _connect_environment_controller() -> void:
 	_environment_controller = _locate_environment_controller()
@@ -295,10 +326,68 @@ func _apply_environment_lighting() -> void:
 		_ground_light.energy = _ground_glow_energy_scale * exposure
 	if _animator and _animator.material is ShaderMaterial:
 		var mat := _animator.material as ShaderMaterial
-		mat.set_shader_parameter("glow_strength", 1.0 + (exposure - 1.0) * 0.6)
+		var base_strength := clampf(0.95 + (_body_glow_energy_scale - BODY_GLOW_BASE_ENERGY) * 0.45, 0.6, 1.6)
+		var rim_strength := clampf(0.85 + (_ground_glow_energy_scale - GROUND_GLOW_BASE_ENERGY) * 0.35, 0.55, 1.7)
+		mat.set_shader_parameter("glow_strength", base_strength * clampf(0.8 + (exposure - 1.0) * 0.55, 0.5, 1.8))
+		mat.set_shader_parameter("rim_strength", rim_strength * clampf(0.85 + (exposure - 1.0) * 0.45, 0.5, 1.9))
+	_glow_exposure = exposure
+	_refresh_glow_sprites()
 
 func _on_environment_changed(_biome_id: StringName, _time_id: StringName) -> void:
 	_apply_environment_lighting()
+
+func _ensure_glow_sprites() -> void:
+	if not is_inside_tree():
+		return
+	if _body_glow_sprite == null or not is_instance_valid(_body_glow_sprite):
+		_body_glow_sprite = _create_glow_sprite("BodyGlowSprite", ENEMY_BODY_GLOW_Z_INDEX)
+	if _ground_glow_sprite == null or not is_instance_valid(_ground_glow_sprite):
+		_ground_glow_sprite = _create_glow_sprite("GroundGlowSprite", ENEMY_GROUND_GLOW_Z_INDEX)
+	_refresh_glow_sprites()
+
+func _create_glow_sprite(node_name: String, z_index_value: int) -> Sprite2D:
+	var sprite := Sprite2D.new()
+	sprite.name = node_name
+	sprite.centered = true
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	sprite.z_as_relative = false
+	sprite.z_index = z_index_value
+	var mat := CanvasItemMaterial.new()
+	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	sprite.material = mat
+	sprite.visible = false
+	add_child(sprite)
+	return sprite
+
+func _refresh_glow_sprites() -> void:
+	if not is_inside_tree():
+		return
+	var radius_scale := _current_glow_radius_scale
+	var exposure := _glow_exposure
+	if _body_glow_sprite:
+		if _body_glow_texture:
+			_body_glow_sprite.texture = _body_glow_texture
+		var base_scale := _body_glow_base_scale
+		if base_scale == Vector2.ZERO:
+			base_scale = Vector2.ONE
+		_body_glow_sprite.scale = base_scale * clampf(radius_scale, 0.6, 2.2)
+		_body_glow_sprite.position = _body_glow_base_position
+		var body_color := BODY_GLOW_COLOR.lerp(_base_modulate, 0.28)
+		body_color.a = clampf(BODY_GLOW_MAX_ALPHA * _body_glow_energy_scale * exposure, 0.0, 1.0)
+		_body_glow_sprite.modulate = body_color
+		_body_glow_sprite.visible = body_color.a > 0.01
+	if _ground_glow_sprite:
+		if _ground_glow_texture:
+			_ground_glow_sprite.texture = _ground_glow_texture
+		var ground_scale := _ground_glow_base_scale
+		if ground_scale == Vector2.ZERO:
+			ground_scale = Vector2.ONE
+		_ground_glow_sprite.scale = ground_scale * clampf(radius_scale, 0.7, 2.5)
+		_ground_glow_sprite.position = _ground_glow_base_position
+		var ground_color := GROUND_GLOW_COLOR.lerp(_base_modulate, 0.22)
+		ground_color.a = clampf(GROUND_GLOW_MAX_ALPHA * _ground_glow_energy_scale * exposure, 0.0, 1.0)
+		_ground_glow_sprite.modulate = ground_color
+		_ground_glow_sprite.visible = ground_color.a > 0.01
 
 func _locate_environment_controller() -> EnvironmentController:
 	if _cached_environment:
@@ -321,6 +410,30 @@ func _find_environment_recursive(node: Node) -> EnvironmentController:
 		if candidate:
 			return candidate
 	return null
+
+func _create_enemy_death_burst() -> EnemyDeathBurst:
+	if EnemyDeathBurstScene:
+		var instance := EnemyDeathBurstScene.instantiate()
+		if instance is EnemyDeathBurst:
+			return instance as EnemyDeathBurst
+		instance.queue_free()
+	if EnemyDeathBurstScript:
+		return EnemyDeathBurstScript.new()
+	return null
+
+func _spawn_death_effect() -> void:
+	if not get_parent():
+		return
+	var burst := _create_enemy_death_burst()
+	if burst == null:
+		return
+	var primary := BODY_GLOW_COLOR.lerp(_base_modulate, 0.5)
+	var accent := BODY_GLOW_RIM_COLOR.lerp(_base_modulate, 0.35)
+	var effect_radius := 42.0 * _current_visual_scale * clampf(glow_radius_multiplier, 0.6, 1.4)
+	if burst.has_method("configure"):
+		burst.call("configure", primary, accent, effect_radius)
+	burst.global_position = global_position
+	get_parent().add_child(burst)
 
 
 func _create_radial_glow_texture(color: Color, falloff_power: float, max_alpha: float) -> Texture2D:

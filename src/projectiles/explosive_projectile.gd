@@ -38,8 +38,9 @@ class_name ExplosiveProjectile
 @export var ground_fire_radius: float = 0.0
 @export var ground_fire_color: Color = Color(1.0, 0.5, 0.3, 0.85)
 
-const ExplosionEffectScript := preload("res://src/effects/explosion_effect.gd")
-const PROJECTILE_BASE_Z_INDEX := 210
+const ExplosionEffectScene := preload("res://scenes/effects/ExplosionEffect.tscn")
+const PROJECTILE_BASE_Z_INDEX := 900
+const GroundFireScene: PackedScene = preload("res://scenes/effects/GroundFire.tscn")
 const GroundFireScript := preload("res://src/effects/ground_fire.gd")
 
 var _age := 0.0
@@ -238,7 +239,13 @@ func _apply_explosion_damage() -> void:
 				owner_node.register_burst_hit(enemy_node)
 
 func _spawn_explosion_effect() -> void:
-	var effect: ExplosionEffect = ExplosionEffectScript.new()
+	if ExplosionEffectScene == null:
+		return
+	var effect_instance := ExplosionEffectScene.instantiate()
+	if not (effect_instance is ExplosionEffect):
+		effect_instance.queue_free()
+		return
+	var effect: ExplosionEffect = effect_instance
 	effect.radius = explosion_radius
 	effect.base_color = explosion_color
 	effect.duration = 0.55 if special_attack else 0.4
@@ -246,11 +253,26 @@ func _spawn_explosion_effect() -> void:
 	if get_parent():
 		effect.global_position = global_position
 		get_parent().add_child(effect)
+	else:
+		effect.queue_free()
+
+
+func _create_ground_fire_effect() -> GroundFire:
+	if GroundFireScene:
+		var instance: Node = GroundFireScene.instantiate()
+		if instance is GroundFire:
+			return instance as GroundFire
+		instance.queue_free()
+	if GroundFireScript:
+		return GroundFireScript.new()
+	return null
 
 func _spawn_ground_fire_if_needed() -> void:
 	if not ground_fire_enabled and ground_fire_damage <= 0:
 		return
-	var fire := GroundFireScript.new()
+	var fire: GroundFire = _create_ground_fire_effect()
+	if fire == null:
+		return
 	fire.radius = ground_fire_radius if ground_fire_radius > 0.0 else max(explosion_radius * 0.7, 80.0)
 	fire.duration = max(ground_fire_duration, 0.1)
 	fire.damage_per_tick = max(1, ground_fire_damage)
@@ -288,6 +310,8 @@ func _ensure_glow_sprite() -> void:
 	_glow_sprite.visible = true
 	_glow_sprite.z_as_relative = false
 	_glow_sprite.z_index = PROJECTILE_BASE_Z_INDEX + 1
+	_glow_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_glow_sprite.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
 	add_child(_glow_sprite)
 
 func _update_glow_visual() -> void:
@@ -320,8 +344,8 @@ func _update_glow_visual() -> void:
 		angle = dir.angle()
 	else:
 		angle = 0.0
-		alpha = clampf(base_color.a * 0.6 + 0.2, 0.0, 0.85)
-		scale_value = clampf(explosion_radius * 0.003 + 0.55, 0.45, 1.1)
+		alpha = clampf(base_color.a * 0.5 + 0.12, 0.0, 0.6)
+		scale_value = clampf(explosion_radius * 0.0024 + 0.38, 0.32, 0.82)
 	_glow_sprite.modulate = _environment_tint(Color(base_color.r, base_color.g, base_color.b, alpha), offset)
 	_glow_sprite.scale = Vector2.ONE * scale_value
 	_glow_sprite.position = offset

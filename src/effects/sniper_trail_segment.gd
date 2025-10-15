@@ -1,3 +1,4 @@
+@tool
 extends Area2D
 class_name SniperTrailSegment
 
@@ -34,6 +35,7 @@ var _glow_gradient: Gradient = Gradient.new()
 var _core_gradient: Gradient = Gradient.new()
 var _burn_polygon: Polygon2D = null
 var _configured: bool = false
+var _is_editor_preview := false
 
 func configure_segment(start_point: Vector2, end_point: Vector2, width: float, segment_duration: float, damage: int, cooldown: float, core_color: Color, glow_color: Color, ember_color: Color) -> void:
 	_start_point = start_point
@@ -58,7 +60,7 @@ func configure_segment(start_point: Vector2, end_point: Vector2, width: float, s
 	_ember_color = ember_color
 	_particle_count = max(12, int(_length / 8.0))
 	_configured = true
-	if DEBUG_TRAIL:
+	if DEBUG_TRAIL and not Engine.is_editor_hint():
 		print("[SniperTrailSegment] configure -> length:", _length, " width:", width, " duration:", _duration, " damage:", _damage_amount)
 	_rotation_setup()
 	_setup_collision_shape()
@@ -68,11 +70,14 @@ func configure_segment(start_point: Vector2, end_point: Vector2, width: float, s
 	set_process(true)
 
 func _ready() -> void:
+	_is_editor_preview = Engine.is_editor_hint()
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	set_process(_configured)
+	if _is_editor_preview and not _configured:
+		_setup_editor_preview()
+	set_process(_configured or _is_editor_preview)
 	if _configured:
 		align_to_world(_mid_point)
-	if DEBUG_TRAIL:
+	if DEBUG_TRAIL and not _is_editor_preview:
 		print("[SniperTrailSegment] ready -> configured:", _configured, " process_mode:", process_mode)
 
 func _rotation_setup() -> void:
@@ -184,18 +189,28 @@ func align_to_world(mid_point: Vector2) -> void:
 	global_position = mid_point
 
 func _process(delta: float) -> void:
+	if Engine.is_editor_hint():
+		if not _configured:
+			return
+		_elapsed += delta
+		if _duration <= 0.0:
+			_duration = 2.0
+		if _elapsed >= _duration:
+			_elapsed = 0.0
+		_update_visual_state()
+		return
 	if not _configured:
 		return
 	_elapsed += delta
 	_damage_timer += delta
-	if DEBUG_TRAIL and _elapsed <= delta * 1.5:
+	if DEBUG_TRAIL and not Engine.is_editor_hint() and _elapsed <= delta * 1.5:
 		print("[SniperTrailSegment] process start -> duration:", _duration)
 	while _damage_timer >= _damage_cooldown:
 		_damage_timer -= _damage_cooldown
 		_apply_damage_tick()
 	_update_visual_state()
 	if _elapsed >= _duration:
-		if DEBUG_TRAIL:
+		if DEBUG_TRAIL and not Engine.is_editor_hint():
 			print("[SniperTrailSegment] queue_free at elapsed:", _elapsed)
 		queue_free()
 
@@ -204,7 +219,7 @@ func _apply_damage_tick() -> void:
 		return
 	var enemies := get_tree().get_nodes_in_group("enemies")
 	if enemies.is_empty():
-		if DEBUG_TRAIL:
+		if DEBUG_TRAIL and not Engine.is_editor_hint():
 			print("[SniperTrailSegment] damage tick -> no enemies in group")
 		return
 	for enemy in enemies:
@@ -221,7 +236,7 @@ func _apply_damage_tick() -> void:
 		if _elapsed - last_time < _damage_cooldown * 0.95:
 			continue
 		enemy.apply_damage(_damage_amount)
-		if DEBUG_TRAIL:
+		if DEBUG_TRAIL and not Engine.is_editor_hint():
 			print("[SniperTrailSegment] damage applied -> enemy:", enemy, " distance:", distance, " elapsed:", _elapsed)
 		_enemy_last_damage[enemy_id] = _elapsed
 
@@ -257,6 +272,26 @@ func _update_visual_state() -> void:
 
 func get_mid_point() -> Vector2:
 	return _mid_point
+
+
+func _setup_editor_preview() -> void:
+	var preview_start := Vector2.ZERO
+	var preview_end := Vector2(320.0, -40.0)
+	var preview_width := 96.0
+	configure_segment(
+		preview_start,
+		preview_end,
+		preview_width,
+		3.0,
+		0,
+		0.5,
+		Color(0.8, 0.95, 1.0, 0.9),
+		Color(0.35, 0.75, 1.0, 0.6),
+		Color(0.85, 0.92, 1.0, 0.9)
+	)
+	align_to_world(preview_start.lerp(preview_end, 0.5))
+	set_deferred("monitoring", false)
+	set_deferred("monitorable", false)
 
 func _distance_to_segment(point: Vector2, a: Vector2, b: Vector2) -> float:
 	var ab := b - a

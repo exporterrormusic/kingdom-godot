@@ -1,7 +1,8 @@
 extends Area2D
 class_name BasicProjectile
 
-const BasicProjectileVisualResource := preload("res://src/projectiles/basic_projectile_visual.gd")
+const BasicProjectileVisualScene: PackedScene = preload("res://scenes/projectiles/BasicProjectileVisual.tscn")
+const BasicProjectileVisualScript := preload("res://src/projectiles/basic_projectile_visual.gd")
 
 @export var speed := 1200.0
 @export var lifetime := 0.75
@@ -50,9 +51,11 @@ var _glow_height := 0.0
 const TRAIL_SAMPLE_DISTANCE := 12.0
 const MAX_TRAIL_POINTS := 36
 
+const GroundFireScene: PackedScene = preload("res://scenes/effects/GroundFire.tscn")
 const GroundFireScript := preload("res://src/effects/ground_fire.gd")
+const SniperTrailSegmentScene: PackedScene = preload("res://scenes/effects/SniperTrailSegment.tscn")
 const SniperTrailSegmentScript := preload("res://src/effects/sniper_trail_segment.gd")
-const PROJECTILE_BASE_Z_INDEX := 210
+const PROJECTILE_BASE_Z_INDEX := 900
 
 @onready var _collision_shape: CollisionShape2D = $CollisionShape2D
 var _last_collision_radius: float = -1.0
@@ -68,16 +71,21 @@ func _ready() -> void:
 	connect("body_entered", Callable(self, "_on_body_entered"))
 	connect("area_entered", Callable(self, "_on_area_entered"))
 	set_process(true)
-	_update_collision_shape_radius()
+	
 	_last_trail_sample = global_position
 	_append_trail_point(global_position)
 	_bounce_visuals_enabled = projectile_archetype.to_lower() == "smg_special"
-	_visual = BasicProjectileVisualResource.new()
+	_visual = _create_basic_projectile_visual()
 	if _visual:
 		add_child(_visual)
 		_visual.setup(self, _bounce_visuals_enabled)
 		_visual.set_trail_enabled(trail_enabled)
 		_ensure_default_glow()
+	
+	# Find collision shape after visual is created
+	_collision_shape = _find_collision_shape()
+	_update_collision_shape_radius()
+	
 	_sync_visual_state()
 
 func set_direction(direction: Vector2) -> void:
@@ -134,6 +142,20 @@ func _compute_laser_beam_length() -> float:
 
 func _compute_laser_beam_width() -> float:
 	return max(radius * 4.0, 10.0)
+
+func _find_collision_shape() -> CollisionShape2D:
+	# First check if the visual has its own collision shape
+	if _visual:
+		for child in _visual.get_children():
+			if child is CollisionShape2D:
+				return child as CollisionShape2D
+	
+	# Fallback to the default collision shape in BasicProjectile
+	var default_shape = $CollisionShape2D
+	if default_shape:
+		return default_shape
+	
+	return null
 
 func set_owner_reference(new_owner: Node) -> void:
 	owner_reference = new_owner
@@ -273,6 +295,9 @@ func apply_default_glow() -> void:
 	var base_color := color if color else Color(1.0, 0.8, 0.4, 1.0)
 	var archetype := projectile_archetype.to_lower()
 	var shape_key := String(shape).to_lower()
+	if archetype == "minigun":
+		configure_glow(false, Color(), 0, 0, 0)
+		return
 	var params := _resolve_default_glow_parameters(base_color, archetype, shape_key)
 	configure_glow(true, params.get("color", base_color), params.get("energy", 0.8), params.get("scale", 0.6), params.get("height", 0.0))
 
@@ -294,10 +319,16 @@ func _resolve_default_glow_parameters(base_color: Color, archetype: String, shap
 			glow_scale = clampf(radius * 0.22 + 1.4, 1.4, 2.8)
 			glow_height = 0.0
 		"tracer":
-			glow_color = Color(base_color.r, base_color.g * 0.9, base_color.b * 0.6, 0.78)
-			glow_energy = 1.1
-			glow_scale = clampf(radius * 0.4, 0.45, 1.6)
-			glow_height = -2.0
+			var tracer_base := _warm_glow_from(base_color)
+			glow_color = Color(
+				clampf(tracer_base.r * 0.75 + 0.12, 0.0, 1.0),
+				clampf(tracer_base.g * 0.48 + 0.1, 0.0, 1.0),
+				clampf(tracer_base.b * 0.28 + 0.05, 0.0, 1.0),
+				0.5
+			)
+			glow_energy = 0.72
+			glow_scale = clampf(radius * 0.42, 0.38, 1.4)
+			glow_height = -1.6
 		"neon":
 			glow_color = Color(0.2, 0.9, 1.0, 0.85)
 			glow_energy = 1.35
@@ -310,10 +341,15 @@ func _resolve_default_glow_parameters(base_color: Color, archetype: String, shap
 			glow_height = -0.08
 	match archetype:
 		"assault":
-			glow_color = _warm_glow_from(base_color).lerp(Color(1.0, 0.52, 0.2, 0.88), 0.42)
-			glow_energy = 0.62
-			glow_scale = clampf(radius * 0.22, 0.34, 0.86)
-			glow_height = -1.4
+			glow_color = Color(0.96, 0.52, 0.2, 0.56)
+			glow_energy = 0.7
+			glow_scale = clampf(radius * 0.42, 0.48, 1.4)
+			glow_height = -1.5
+		"assault_special":
+			glow_color = Color(1.0, 0.58, 0.24, 0.72)
+			glow_energy = 0.95
+			glow_scale = clampf(radius * 0.55, 0.6, 1.8)
+			glow_height = -1.6
 		"smg":
 			glow_color = _warm_glow_from(base_color).lerp(Color(1.0, 0.58, 0.3, 0.32), 0.34)
 			glow_energy = 0.3
@@ -347,10 +383,25 @@ func _resolve_default_glow_parameters(base_color: Color, archetype: String, shap
 			glow_scale = clampf(radius * 0.34, 0.4, 1.1)
 			glow_height = -0.22
 		"minigun":
-			glow_color = _warm_glow_from(base_color).lerp(Color(1.0, 0.38, 0.08, 0.98), 0.5)
-			glow_energy = 1.05
-			glow_scale = clampf(radius * 0.3, 0.42, 1.2)
-			glow_height = -2.4
+			glow_color = Color(0.28, 0.6, 0.96, 0.5)
+			glow_energy = 0.76
+			glow_scale = clampf(radius * 0.44, 0.48, 1.45)
+			glow_height = -1.3
+		"minigun_special":
+			glow_color = Color(0.45, 0.84, 1.0, 0.82)
+			glow_energy = 1.25
+			glow_scale = clampf(radius * 0.58, 0.8, 2.1)
+			glow_height = -1.4
+		"sniper":
+			glow_color = Color(0.82, 0.98, 1.0, 0.92)
+			glow_energy = 2.1
+			glow_scale = clampf(radius * 0.8, 1.2, 3.0)
+			glow_height = -6.0
+		"sniper_special":
+			glow_color = Color(0.72, 0.95, 1.0, 0.95)
+			glow_energy = 3.2
+			glow_scale = clampf(radius * 1.1, 1.6, 3.8)
+			glow_height = -10.0
 	return {
 		"color": glow_color,
 		"energy": glow_energy,
@@ -366,6 +417,39 @@ func _warm_glow_from(base_color: Color) -> Color:
 		clampf(base_color.a * 0.78 + 0.18, 0.0, 1.0)
 	)
 
+
+func _create_basic_projectile_visual() -> BasicProjectileVisual:
+	if BasicProjectileVisualScene:
+		var instance: Node = BasicProjectileVisualScene.instantiate()
+		if instance is BasicProjectileVisual:
+			return instance as BasicProjectileVisual
+		instance.queue_free()
+	if BasicProjectileVisualScript:
+		return BasicProjectileVisualScript.new()
+	return null
+
+
+func _create_ground_fire_trail() -> GroundFire:
+	if GroundFireScene:
+		var instance: Node = GroundFireScene.instantiate()
+		if instance is GroundFire:
+			return instance as GroundFire
+		instance.queue_free()
+	if GroundFireScript:
+		return GroundFireScript.new()
+	return null
+
+
+func _create_sniper_trail_segment() -> SniperTrailSegment:
+	if SniperTrailSegmentScene:
+		var instance: Node = SniperTrailSegmentScene.instantiate()
+		if instance is SniperTrailSegment:
+			return instance as SniperTrailSegment
+		instance.queue_free()
+	if SniperTrailSegmentScript:
+		return SniperTrailSegmentScript.new()
+	return null
+
 func _on_successful_bounce(bounce_origin: Vector2) -> void:
 	if not _has_bounced:
 		_has_bounced = true
@@ -377,7 +461,9 @@ func _spawn_trail_segment() -> void:
 	if trail_damage <= 0:
 		return
 	if shape.to_lower() == "laser":
-		var segment := SniperTrailSegmentScript.new()
+		var segment: SniperTrailSegment = _create_sniper_trail_segment()
+		if segment == null:
+			return
 		var end_point: Vector2 = global_position
 		var start_point: Vector2 = end_point - (_direction.normalized() * max(trail_interval, 48.0))
 		if _trail_positions.size() >= 2:
@@ -409,11 +495,13 @@ func _spawn_trail_segment() -> void:
 		if get_parent():
 			get_parent().add_child(segment)
 		return
-	var fire_node: Node2D = GroundFireScript.new()
-	fire_node.set("radius", max(trail_interval * 0.6, 40.0))
-	fire_node.set("damage_per_tick", trail_damage)
-	fire_node.set("duration", trail_duration)
-	fire_node.set("color", trail_color)
+	var fire_node: GroundFire = _create_ground_fire_trail()
+	if fire_node == null:
+		return
+	fire_node.radius = max(trail_interval * 0.6, 40.0)
+	fire_node.damage_per_tick = trail_damage
+	fire_node.duration = trail_duration
+	fire_node.color = trail_color
 	var glow := Color(trail_color.r * 0.7 + 0.05, trail_color.g * 0.8 + 0.05, trail_color.b, clampf(trail_color.a * 0.6 + 0.1, 0.0, 1.0))
 	var ember := Color(
 		clampf(trail_color.r * 0.6 + 0.15, 0.0, 1.0),
@@ -422,9 +510,9 @@ func _spawn_trail_segment() -> void:
 		clampf(trail_color.a * 0.85 + 0.1, 0.0, 1.0)
 	)
 	var smoke := Color(trail_color.r * 0.4, trail_color.g * 0.5, trail_color.b * 0.8, 0.32)
-	fire_node.set("glow_color", glow)
-	fire_node.set("ember_color", ember)
-	fire_node.set("smoke_color", smoke)
+	fire_node.glow_color = glow
+	fire_node.ember_color = ember
+	fire_node.smoke_color = smoke
 	fire_node.global_position = global_position
 	if get_parent():
 		get_parent().add_child(fire_node)

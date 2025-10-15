@@ -16,17 +16,19 @@ var _forward: Vector2 = Vector2.RIGHT
 var _damaged_instances: Dictionary = {}
 var _rng := RandomNumberGenerator.new()
 var _hit_spark_spawned: bool = false
+var _sparkle_seed: int = 0
+
+var _visual: Node2D = null
 
 const SwordSparkleScript := preload("res://src/effects/sword_sparkle.gd")
+const SwordSlashVisualScene: PackedScene = preload("res://scenes/effects/visuals/sword/SwordSlashVisual.tscn")
 
 func _ready() -> void:
 	_rng.randomize()
+	_sparkle_seed = int(randi())
 	z_index = 40
-	var additive := CanvasItemMaterial.new()
-	additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	material = additive
 	set_process(true)
-	queue_redraw()
+	_ensure_visual()
 
 func assign_owner(owner_node: Node2D) -> void:
 	owner_reference = owner_node
@@ -61,7 +63,7 @@ func set_colors(core: Color, edge: Color, glow: Color) -> void:
 
 func refresh_immediate() -> void:
 	_refresh_orientation()
-	queue_redraw()
+	_update_visual_state()
 
 func _process(delta: float) -> void:
 	_age += delta
@@ -72,7 +74,7 @@ func _process(delta: float) -> void:
 		queue_free()
 		return
 	_apply_damage()
-	queue_redraw()
+	_update_visual_state()
 
 func _refresh_orientation() -> bool:
 	if owner_reference == null or not is_instance_valid(owner_reference):
@@ -138,66 +140,41 @@ func _spawn_hit_spark(spark_pos: Vector2) -> void:
 	sparkle.z_index = int(max(z_index + 10, 80))
 	parent.add_child(sparkle)
 	sparkle.global_position = spark_pos
+	_update_visual_state()
 
-func _draw() -> void:
+func _ensure_visual() -> void:
+	if _visual != null:
+		return
+	if SwordSlashVisualScene == null:
+		return
+	var instance := SwordSlashVisualScene.instantiate()
+	if instance == null:
+		return
+	if not instance.has_method("update_visual"):
+		instance.queue_free()
+		return
+	_visual = instance
+	_visual.z_index = z_index
+	_visual.z_as_relative = false
+	add_child(_visual)
+	_update_visual_state()
+
+func _update_visual_state() -> void:
+	if _visual == null:
+		return
+	if not _visual.has_method("update_visual"):
+		return
 	var progress: float = clampf(_age / maxf(duration, 0.001), 0.0, 1.0)
 	var wipe_progress: float = _compute_wipe_progress()
 	var fade: float = pow(1.0 - progress, 1.2)
-	var outer_radius: float = slash_range * wipe_progress
-	if outer_radius <= 2.0:
-		return
-	var layers := [
-		{
-			"outer": outer_radius * 1.2,
-			"inner": outer_radius * 0.55,
-			"color": Color(glow_color.r, glow_color.g, glow_color.b, glow_color.a * fade * 0.65)
-		},
-		{
-			"outer": outer_radius * 1.05,
-			"inner": outer_radius * 0.42,
-			"color": Color(core_color.r, core_color.g, core_color.b, core_color.a * fade)
-		},
-		{
-			"outer": outer_radius * 0.9,
-			"inner": outer_radius * 0.2,
-			"color": Color(edge_color.r, edge_color.g, edge_color.b, edge_color.a * fade * 0.9)
-		}
-	]
-	for layer in layers:
-		_draw_arc_segment(float(layer["outer"]), float(layer["inner"]), layer["color"])
-	_draw_sparkle_lines(outer_radius, fade)
-
-func _draw_arc_segment(outer_radius: float, inner_radius: float, color: Color) -> void:
-	if outer_radius <= 0.5:
-		return
-	inner_radius = clampf(inner_radius, 0.0, outer_radius - 0.5)
-	var half_arc: float = deg_to_rad(arc_degrees) * 0.5
-	var segments: int = max(10, int(arc_degrees / 4.0))
-	var points := PackedVector2Array()
-	for i in range(segments + 1):
-		var t: float = float(i) / float(segments)
-		var angle: float = -half_arc + t * (half_arc * 2.0)
-		points.append(Vector2(cos(angle), sin(angle)) * outer_radius)
-	for i in range(segments, -1, -1):
-		var t: float = float(i) / float(segments)
-		var angle: float = -half_arc + t * (half_arc * 2.0)
-		points.append(Vector2(cos(angle), sin(angle)) * inner_radius)
-	var colors := PackedColorArray()
-	for _i in points:
-		colors.append(color)
-	draw_polygon(points, colors)
-
-func _draw_sparkle_lines(outer_radius: float, fade: float) -> void:
-	var half_arc: float = deg_to_rad(arc_degrees) * 0.5
-	var sparkle_count: int = 6
-	var sparkle_color := Color(edge_color.r, edge_color.g, edge_color.b, edge_color.a * fade)
-	for i in range(sparkle_count):
-		var t: float = float(i) / max(1.0, float(sparkle_count - 1))
-		var angle: float = -half_arc + t * (half_arc * 2.0)
-		var radius: float = lerpf(outer_radius * 0.35, outer_radius * 0.95, t)
-		var center: Vector2 = Vector2(cos(angle), sin(angle)) * radius
-		var size: float = lerpf(outer_radius * 0.08, outer_radius * 0.12, t)
-		var dir := Vector2.RIGHT.rotated(angle)
-		draw_line(center - dir * size, center + dir * size, sparkle_color, max(1.5, size * 0.08), true)
-		var diag_dir := dir.rotated(PI * 0.5)
-		draw_line(center - diag_dir * size * 0.6, center + diag_dir * size * 0.6, sparkle_color, max(1.2, size * 0.06), true)
+	_visual.call("update_visual", {
+		"radius": slash_range,
+		"arc_degrees": arc_degrees,
+		"core_color": core_color,
+		"edge_color": edge_color,
+		"glow_color": glow_color,
+		"fade": fade,
+		"wipe_progress": wipe_progress,
+		"sparkle_seed": _sparkle_seed,
+		"sparkle_count": 6
+	})

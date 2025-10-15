@@ -1,0 +1,27 @@
+[gd_scene load_steps=6 format=3 uid="uid://kyfs62jxxot7"]
+
+[ext_resource type="Script" uid="uid://c3vvmc7gd6svk" path="res://src/projectiles/visuals/weapons/smg_special_bullet_visual.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://1q37hn2mjviw" path="res://assets/images/Bullets/SMG.png" id="2"]
+[ext_resource type="Shader" uid="uid://d08hxd1am20uf" path="res://src/projectiles/shaders/smg_glow.gdshader" id="2_vc43w"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_tcts8"]
+shader = ExtResource("2_vc43w")
+shader_parameter/glow_color = Color(0.2, 0.9, 1, 1)
+shader_parameter/glow_intensity = 0.5562393400116125
+shader_parameter/glow_size = 0.009270655666860209
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_fapdl"]
+radius = 12.0
+
+[node name="SmgSpecialBulletVisual" type="Node2D"]
+script = ExtResource("1")
+
+[node name="BulletSprite" type="Sprite2D" parent="."]
+modulate = Color(0.3, 0.95, 1, 1)
+texture_filter = 2
+material = SubResource("ShaderMaterial_tcts8")
+scale = Vector2(0.1092632, 0.1092632)
+texture = ExtResource("2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_fapdl")

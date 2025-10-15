@@ -34,6 +34,7 @@ var _white_texture: Texture2D = null
 var _noise := FastNoiseLite.new()
 var _rng := RandomNumberGenerator.new()
 var _time_accumulator: float = 0.0
+var _emit_glow: bool = true
 
 func _ready() -> void:
 	set_process(true)
@@ -48,7 +49,7 @@ func _ready() -> void:
 	_noise.fractal_lacunarity = 2.0
 	_noise.fractal_gain = 0.48
 
-func configure(pellets: Array, forward: Vector2, base_color: Color, glow_color: Color, is_special: bool) -> void:
+func configure(pellets: Array, forward: Vector2, base_color: Color, glow_color: Color, is_special: bool, emit_glow: bool = true) -> void:
 	_pellet_refs.clear()
 	for pellet in pellets:
 		if pellet is Node2D:
@@ -60,12 +61,16 @@ func configure(pellets: Array, forward: Vector2, base_color: Color, glow_color: 
 	_base_color = base_color
 	_glow_color = glow_color
 	_is_special = is_special
+	_emit_glow = emit_glow
 	_fading = false
 	_fade_timer = 0.0
 	_life_ratio = 1.0
 	_setup_layers()
-	_setup_sparks()
-	_setup_special_glow()
+	if _emit_glow:
+		_setup_sparks()
+		_setup_special_glow()
+	else:
+		_teardown_glow()
 	_update_from_positions(_collect_positions())
 
 func _process(delta: float) -> void:
@@ -161,6 +166,8 @@ func _setup_layers() -> void:
 		_line_layers.append(line)
 
 func _setup_sparks() -> void:
+	if not _emit_glow:
+		return
 	if _spark_node and is_instance_valid(_spark_node):
 		_spark_node.queue_free()
 	_spark_node = GPUParticles2D.new()
@@ -186,6 +193,8 @@ func _setup_sparks() -> void:
 	add_child(_spark_node)
 
 func _setup_special_glow() -> void:
+	if not _emit_glow:
+		return
 	if not _is_special:
 		if _special_sprite and is_instance_valid(_special_sprite):
 			_special_sprite.visible = false
@@ -225,6 +234,8 @@ func _resolve_layer_color(index: int) -> Color:
 	)
 
 func _update_sparks(points: PackedVector2Array) -> void:
+	if not _emit_glow:
+		return
 	if _spark_node == null or not (_spark_node.process_material is ParticleProcessMaterial):
 		return
 	if points.size() < 2:
@@ -250,7 +261,7 @@ func _update_sparks(points: PackedVector2Array) -> void:
 	_spark_node.emitting = _life_ratio > 0.05
 
 func _update_special_glow(points: PackedVector2Array) -> void:
-	if not _is_special or _special_sprite == null:
+	if not _emit_glow or not _is_special or _special_sprite == null:
 		return
 	var max_radius := 0.0
 	for point in points:
@@ -336,3 +347,11 @@ func _deform_points(points: PackedVector2Array, layer_index: int) -> PackedVecto
 		var offset: Vector2 = normal * amplitude * noise_value + radial * amplitude * 0.18 * flicker
 		deformed.append(point + offset)
 	return deformed
+
+func _teardown_glow() -> void:
+	if _spark_node and is_instance_valid(_spark_node):
+		_spark_node.queue_free()
+	_spark_node = null
+	if _special_sprite and is_instance_valid(_special_sprite):
+		_special_sprite.queue_free()
+	_special_sprite = null

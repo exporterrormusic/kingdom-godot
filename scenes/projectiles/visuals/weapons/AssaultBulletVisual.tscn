@@ -1,0 +1,29 @@
+[gd_scene load_steps=6 format=3 uid="uid://dogdlo15iec56"]
+
+[ext_resource type="Script" uid="uid://dgb3b6pwx8lgc" path="res://src/projectiles/visuals/weapons/assault_bullet_visual.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://d3po2jyb6dyhh" path="res://assets/images/Bullets/Assault_Normal.png" id="2"]
+[ext_resource type="Shader" uid="uid://d08hxd1am20uf" path="res://src/projectiles/shaders/assault_normal_glow.gdshader" id="2_hvwgj"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_h6krn"]
+shader = ExtResource("2_hvwgj")
+shader_parameter/glow_color = Color(1, 1, 1, 1)
+shader_parameter/glow_intensity = 0.3
+shader_parameter/glow_size = 0.004
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hitbox"]
+radius = 7.0
+
+[node name="AssaultBulletVisual" type="Node2D"]
+script = ExtResource("1")
+
+[node name="BulletSprite" type="Sprite2D" parent="."]
+modulate = Color(1, 0.82, 0.42, 1)
+texture_filter = 2
+material = SubResource("ShaderMaterial_h6krn")
+position = Vector2(0, 1)
+scale = Vector2(0.13911864, -0.1497347)
+texture = ExtResource("2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+scale = Vector2(2.4421303, -1.3872575)
+shape = SubResource("CircleShape2D_hitbox")

@@ -1,3 +1,4 @@
+@tool
 extends Node2D
 class_name MinigunLightningArc
 
@@ -18,6 +19,8 @@ func _ready() -> void:
 	_rng.randomize()
 	_ensure_nodes()
 	set_process(true)
+	if Engine.is_editor_hint():
+		_configure_preview()
 
 func configure(start_point: Vector2, end_point: Vector2, width: float, intensity: float) -> void:
 	_ensure_nodes()
@@ -33,6 +36,8 @@ func configure(start_point: Vector2, end_point: Vector2, width: float, intensity
 	_glow.position = _points[_points.size() - 1] if _points.size() > 0 else Vector2.ZERO
 
 func _process(delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
 	_elapsed += delta
 	var ratio := 1.0 - clampf(_elapsed / max(lifetime, 0.001), 0.0, 1.0)
 	if ratio <= 0.0:
@@ -97,3 +102,13 @@ func _ensure_nodes() -> void:
 		_glow.material = glow_mat
 	if _glow.get_parent() != self:
 		add_child(_glow)
+
+
+func _configure_preview() -> void:
+	# Populate a stable arc so the scene is visible in the editor viewport.
+	var start := Vector2.ZERO
+	var finish := Vector2(220.0, -60.0)
+	_elapsed = 0.0
+	configure(start, finish, 18.0, 1.0)
+	if _glow:
+		_glow.modulate = Color(glow_color.r, glow_color.g, glow_color.b, glow_color.a)

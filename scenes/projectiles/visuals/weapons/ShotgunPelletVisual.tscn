@@ -1,0 +1,28 @@
+[gd_scene load_steps=6 format=3 uid="uid://c0vy415hgoevs"]
+
+[ext_resource type="Script" uid="uid://byy7g5rmh10o6" path="res://src/projectiles/visuals/weapons/shotgun_pellet_visual.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://bw4hc3ksfqyyy" path="res://assets/images/Bullets/Shotgun_Normal.png" id="2"]
+[ext_resource type="Shader" uid="uid://d08hxd1am20uf" path="res://src/projectiles/shaders/smg_glow.gdshader" id="3"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hmekj"]
+shader = ExtResource("3")
+shader_parameter/glow_color = Color(1, 0.5, 0, 1)
+shader_parameter/glow_intensity = 0.3
+shader_parameter/glow_size = 0.004
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hitbox"]
+radius = 11.18034
+
+[node name="ShotgunPelletVisual" type="Node2D"]
+script = ExtResource("1")
+
+[node name="BulletSprite" type="Sprite2D" parent="."]
+modulate = Color(1, 0.74, 0.32, 1)
+texture_filter = 2
+material = SubResource("ShaderMaterial_hmekj")
+position = Vector2(1.7881393e-07, 1.0728836e-06)
+scale = Vector2(0.10937499, 0.10937499)
+texture = ExtResource("2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_hitbox")

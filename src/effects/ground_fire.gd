@@ -1,3 +1,4 @@
+@tool
 extends Area2D
 class_name GroundFire
 
@@ -15,8 +16,10 @@ var _elapsed := 0.0
 var _tick_elapsed := 0.0
 var _rng := RandomNumberGenerator.new()
 var _embers: Array = []
+var _is_editor_preview := false
 
 func _ready() -> void:
+	_is_editor_preview = Engine.is_editor_hint()
 	var shape := CircleShape2D.new()
 	shape.radius = radius
 	var collider := CollisionShape2D.new()
@@ -32,9 +35,25 @@ func _ready() -> void:
 			"size": _rng.randf_range(radius * 0.05, radius * 0.12)
 		})
 	set_process(true)
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	if _is_editor_preview:
+		_setup_editor_preview()
 	queue_redraw()
 
 func _process(delta: float) -> void:
+	if _is_editor_preview:
+		_elapsed += delta
+		_tick_elapsed += delta
+		if _tick_elapsed >= tick_interval:
+			_tick_elapsed = 0.0
+		for i in range(_embers.size()):
+			var ember: Dictionary = _embers[i]
+			ember["angle"] = ember.get("angle", 0.0) + delta * ember.get("speed", 2.0)
+			_embers[i] = ember
+		if _elapsed >= max(duration, 0.1):
+			_elapsed = 0.0
+		queue_redraw()
+		return
 	_elapsed += delta
 	_tick_elapsed += delta
 	if _elapsed >= duration:
@@ -50,6 +69,8 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _apply_damage() -> void:
+	if _is_editor_preview:
+		return
 	var enemies := get_tree().get_nodes_in_group("enemies")
 	for enemy in enemies:
 		if not is_instance_valid(enemy):
@@ -85,3 +106,8 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, radius * 1.4, Color(smoke_color.r, smoke_color.g, smoke_color.b, smoke_alpha))
 	var indicator_color := Color(1.0, 0.2, 0.05, 0.4 * fade)
 	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 32, indicator_color, 3.0)
+
+
+func _setup_editor_preview() -> void:
+	set_deferred("monitoring", false)
+	set_deferred("monitorable", false)
